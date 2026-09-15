@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import type { FastifyInstance } from "fastify";
 import { db } from "../../db/index.js";
 import { refreshTokens, users } from "../../db/schema.js";
+import { firstOrThrow } from "../../db/utils.js";
 import { config } from "../../config.js";
 import type { RegisterInput, LoginInput } from "@kor/types";
 
@@ -39,10 +40,9 @@ async function issueTokenPair(app: FastifyInstance, userId: string) {
   const tokenHash = await bcrypt.hash(refreshSecret, 10);
   const expiresAt = new Date(Date.now() + config.JWT_REFRESH_TTL_DAYS * 24 * 60 * 60 * 1000);
 
-  const [row] = await db
-    .insert(refreshTokens)
-    .values({ userId, tokenHash, expiresAt })
-    .returning({ id: refreshTokens.id });
+  const row = firstOrThrow(
+    await db.insert(refreshTokens).values({ userId, tokenHash, expiresAt }).returning({ id: refreshTokens.id })
+  );
 
   // El refresh token que viaja al cliente combina el id de fila (para lookup O(1))
   // con el secreto (que solo existe hasheado en la base).
@@ -64,15 +64,17 @@ export async function register(app: FastifyInstance, input: RegisterInput) {
   }
 
   const passwordHash = await bcrypt.hash(input.password, 10);
-  const [user] = await db
-    .insert(users)
-    .values({
-      email: input.email,
-      passwordHash,
-      username: input.username.toLowerCase(),
-      displayName: input.displayName,
-    })
-    .returning();
+  const user = firstOrThrow(
+    await db
+      .insert(users)
+      .values({
+        email: input.email,
+        passwordHash,
+        username: input.username.toLowerCase(),
+        displayName: input.displayName,
+      })
+      .returning()
+  );
 
   const tokens = await issueTokenPair(app, user.id);
   return { user: toPublicUser(user), tokens };

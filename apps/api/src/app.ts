@@ -1,4 +1,4 @@
-import Fastify from "fastify";
+import Fastify, { type FastifyError } from "fastify";
 import cors from "@fastify/cors";
 import jwt from "@fastify/jwt";
 import rateLimit from "@fastify/rate-limit";
@@ -7,6 +7,10 @@ import { config } from "./config.js";
 import authenticate from "./plugins/authenticate.js";
 import { authRoutes } from "./domains/auth/routes.js";
 import { usersRoutes } from "./domains/users/routes.js";
+import { socialRoutes } from "./domains/social/routes.js";
+import { followRoutes } from "./domains/follows/routes.js";
+import { feedRoutes } from "./domains/feed/routes.js";
+import { locationsRoutes } from "./domains/locations/routes.js";
 
 export async function buildApp() {
   const app = Fastify({
@@ -26,8 +30,12 @@ export async function buildApp() {
 
   await app.register(authRoutes, { prefix: "/api/v1" });
   await app.register(usersRoutes, { prefix: "/api/v1" });
+  await app.register(socialRoutes, { prefix: "/api/v1" });
+  await app.register(followRoutes, { prefix: "/api/v1" });
+  await app.register(feedRoutes, { prefix: "/api/v1" });
+  await app.register(locationsRoutes, { prefix: "/api/v1" });
 
-  app.setErrorHandler((err, _req, reply) => {
+  app.setErrorHandler((err: FastifyError, _req, reply) => {
     app.log.error(err);
     const statusCode = err.statusCode ?? 500;
     reply.status(statusCode).send({
