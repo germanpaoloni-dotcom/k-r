@@ -1,0 +1,21 @@
+{
+  "name": "kor",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Kōr — red social de descubrimiento local potenciada por IA",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:api": "npm run dev --workspace=@kor/api",
+    "dev:web": "npm run dev --workspace=@kor/web",
+    "build": "npm run build --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "db:generate": "npm run db:generate --workspace=@kor/api",
+    "db:migrate": "npm run db:migrate --workspace=@kor/api"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
