@@ -11,6 +11,14 @@ import { socialRoutes } from "./domains/social/routes.js";
 import { followRoutes } from "./domains/follows/routes.js";
 import { feedRoutes } from "./domains/feed/routes.js";
 import { locationsRoutes } from "./domains/locations/routes.js";
+import { friendshipsRoutes } from "./domains/friendships/routes.js";
+import { blocksRoutes } from "./domains/blocks/routes.js";
+import { miraEstoRoutes } from "./domains/mira-esto/routes.js";
+import { orbsRoutes } from "./domains/orbs/routes.js";
+import { sharesRoutes } from "./domains/shares/routes.js";
+import { messagingRoutes } from "./domains/messaging/routes.js";
+import { notificationsRoutes } from "./domains/notifications/routes.js";
+import { moderationRoutes } from "./domains/moderation/routes.js";
 
 export async function buildApp() {
   const app = Fastify({
@@ -34,6 +42,14 @@ export async function buildApp() {
   await app.register(followRoutes, { prefix: "/api/v1" });
   await app.register(feedRoutes, { prefix: "/api/v1" });
   await app.register(locationsRoutes, { prefix: "/api/v1" });
+  await app.register(friendshipsRoutes, { prefix: "/api/v1" });
+  await app.register(blocksRoutes, { prefix: "/api/v1" });
+  await app.register(miraEstoRoutes, { prefix: "/api/v1" });
+  await app.register(orbsRoutes, { prefix: "/api/v1" });
+  await app.register(sharesRoutes, { prefix: "/api/v1" });
+  await app.register(messagingRoutes, { prefix: "/api/v1" });
+  await app.register(notificationsRoutes, { prefix: "/api/v1" });
+  await app.register(moderationRoutes, { prefix: "/api/v1" });
 
   app.setErrorHandler((err: FastifyError, _req, reply) => {
     app.log.error(err);

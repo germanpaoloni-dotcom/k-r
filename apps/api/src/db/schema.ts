@@ -9,6 +9,7 @@ import {
   jsonb,
   primaryKey,
   index,
+  uniqueIndex,
   doublePrecision,
   pgEnum,
 } from "drizzle-orm/pg-core";
@@ -53,6 +54,28 @@ export const payoutStatusEnum = pgEnum("payout_status", [
   "processing",
   "paid",
   "failed",
+]);
+
+// --- Nuevos enums v2.1 --------------------------------------------------
+
+export const friendshipStatusEnum = pgEnum("friendship_status", [
+  "pending",
+  "accepted",
+  "declined",
+]);
+export const miraEstoContentTypeEnum = pgEnum("mira_esto_content_type", [
+  "media",
+  "text",
+  "mixed",
+]);
+export const postKindEnum = pgEnum("post_kind", ["photo", "video", "creation"]);
+export const conversationTypeEnum = pgEnum("conversation_type", ["direct", "group"]);
+export const shareScopeEnum = pgEnum("share_scope", ["dm", "public"]);
+export const moderationStatusEnum = pgEnum("moderation_status", [
+  "clean",
+  "flagged",
+  "under_review",
+  "removed",
 ]);
 
 /* ---------------------------------------------------------------------- */
@@ -123,6 +146,11 @@ export const posts = pgTable(
     caption: text("caption"),
     locationId: uuid("location_id").references(() => locations.id),
     visibility: postVisibilityEnum("visibility").notNull().default("public"),
+    // v2.1: video y creación son variantes de posts (mismo ciclo de vida),
+    // no entidades nuevas. `medium` solo aplica a kind="creation" (Estudio,
+    // Fase 2) — ej. "dibujo" | "collage". Ver kor-arquitectura-v2.md §5.
+    kind: postKindEnum("kind").notNull().default("photo"),
+    medium: varchar("medium", { length: 30 }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
@@ -202,6 +230,94 @@ export const follows = pgTable(
   })
 );
 
+/**
+ * Grafo social mutuo ("Mi gente"), distinto de `follows` (asimétrico).
+ * "Mi gente" = friendships aceptadas + follows favoritos (ver feed/service.ts).
+ */
+export const friendships = pgTable(
+  "friendships",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    requesterId: uuid("requester_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    addresseeId: uuid("addressee_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    status: friendshipStatusEnum("status").notNull().default("pending"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    respondedAt: timestamp("responded_at", { withTimezone: true }),
+  },
+  (t) => ({
+    pairUnique: uniqueIndex("friendships_pair_idx").on(t.requesterId, t.addresseeId),
+    addresseeIdx: index("friendships_addressee_idx").on(t.addresseeId, t.status),
+  })
+);
+
+/** Bloqueo unidireccional. Se enforce en follow/mensajería y se usa para filtrar feeds. */
+export const blocks = pgTable(
+  "blocks",
+  {
+    blockerId: uuid("blocker_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    blockedId: uuid("blocked_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.blockerId, t.blockedId] }),
+  })
+);
+
+/**
+ * Mirá esto — contenido efímero (24h), promovible a post permanente.
+ * Tabla propia porque su ciclo de vida es distinto al de `posts`.
+ * `contentType` decide qué campos aplican: media (solo mediaId), texto (solo
+ * text), mixed (ambos). Los Orbes leen esta tabla como una de sus fuentes de
+ * señal, pero Mirá esto y Orbes son conceptos separados — ver ORBES.md /
+ * kor-arquitectura-v2.1.md.
+ */
+export const miraEsto = pgTable(
+  "mira_esto",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    contentType: miraEstoContentTypeEnum("content_type").notNull().default("media"),
+    text: text("text"),
+    mediaId: uuid("media_id").references(() => media.id, { onDelete: "cascade" }),
+    locationId: uuid("location_id").references(() => locations.id),
+    intentEmoji: varchar("intent_emoji", { length: 8 }),
+    promotedToPostId: uuid("promoted_to_post_id").references(() => posts.id),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    userCreatedIdx: index("mira_esto_user_created_idx").on(t.userId, t.createdAt),
+    expiresIdx: index("mira_esto_expires_idx").on(t.expiresAt),
+  })
+);
+
+/**
+ * Compartir — siempre por referencia, nunca duplica contenido.
+ * DM: reutiliza `messages` (attachmentType='post'|'mira_esto', ver domains/messaging).
+ * Público: esta tabla. `targetType` es polimórfico como en likes/comments.
+ */
+export const shares = pgTable("shares", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  targetType: varchar("target_type", { length: 20 }).notNull(), // post | mira_esto | event | product
+  targetId: uuid("target_id").notNull(),
+  scope: shareScopeEnum("scope").notNull().default("public"),
+  caption: text("caption"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const collections = pgTable("collections", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: uuid("user_id")
@@ -233,6 +349,8 @@ export const collectionItems = pgTable(
 
 export const conversations = pgTable("conversations", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  type: conversationTypeEnum("type").notNull().default("direct"),
+  createdBy: uuid("created_by").references(() => users.id),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -245,6 +363,10 @@ export const conversationParticipants = pgTable(
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
+    // Estado de lectura vía marca de tiempo (no recibos por mensaje) — ver
+    // kor-arquitectura-v2.1.md §"Mensajería".
+    lastReadAt: timestamp("last_read_at", { withTimezone: true }),
+    joinedAt: timestamp("joined_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
     pk: primaryKey({ columns: [t.conversationId, t.userId] }),
@@ -262,8 +384,9 @@ export const messages = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     body: text("body"),
-    attachmentType: varchar("attachment_type", { length: 20 }), // post | location | product | event
+    attachmentType: varchar("attachment_type", { length: 20 }), // post | mira_esto | location | product | event
     attachmentId: uuid("attachment_id"),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
@@ -283,6 +406,21 @@ export const notifications = pgTable("notifications", {
   payload: jsonb("payload").notNull().default({}),
   readAt: timestamp("read_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** Preferencias de notificación por usuario y tipo — agrupación real es en tiempo de lectura. */
+export const notificationPreferences = pgTable("notification_preferences", {
+  userId: uuid("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  likes: boolean("likes").notNull().default(true),
+  comments: boolean("comments").notNull().default(true),
+  follows: boolean("follows").notNull().default(true),
+  friendRequests: boolean("friend_requests").notNull().default(true),
+  messages: boolean("messages").notNull().default(true),
+  miraEsto: boolean("mira_esto").notNull().default(true),
+  digest: boolean("digest").notNull().default(true),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 /* ---------------------------------------------------------------------- */
@@ -468,3 +606,28 @@ export const reports = pgTable("reports", {
   resolvedAt: timestamp("resolved_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+/**
+ * Moderación centralizada — regla dura (kor-arquitectura-v2.1.md §"Moderación"):
+ * ningún dominio de contenido nuevo puede saltear esta tabla. Un `report` sobre
+ * un target crea o actualiza su fila acá; el estado agregado por target vive
+ * acá, no desperdigado por dominio.
+ */
+export const contentModeration = pgTable(
+  "content_moderation",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    targetType: varchar("target_type", { length: 20 }).notNull(),
+    targetId: uuid("target_id").notNull(),
+    status: moderationStatusEnum("status").notNull().default("clean"),
+    reportsCount: integer("reports_count").notNull().default(0),
+    lastReportedAt: timestamp("last_reported_at", { withTimezone: true }),
+    resolvedBy: uuid("resolved_by").references(() => users.id),
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    targetUnique: uniqueIndex("content_moderation_target_idx").on(t.targetType, t.targetId),
+    statusIdx: index("content_moderation_status_idx").on(t.status),
+  })
+);

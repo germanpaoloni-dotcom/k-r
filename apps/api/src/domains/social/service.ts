@@ -12,6 +12,7 @@ import {
 } from "../../db/schema.js";
 import { hydratePosts, type PostDto } from "./dto.js";
 import { firstOrThrow } from "../../db/utils.js";
+import { notify } from "../notifications/service.js";
 
 export class SocialError extends Error {
   constructor(
@@ -104,6 +105,8 @@ export async function likePost(postId: string, userId: string) {
     .insert(likes)
     .values({ userId, targetType: "post", targetId: postId })
     .onConflictDoNothing();
+  const [post] = await db.select({ userId: posts.userId }).from(posts).where(eq(posts.id, postId));
+  if (post) await notify(post.userId, "like", { postId, fromUserId: userId }, { skipIfActor: userId });
 }
 
 export async function unlikePost(postId: string, userId: string) {
@@ -125,6 +128,7 @@ export async function addComment(
     .insert(comments)
     .values({ postId, userId, body, parentCommentId: parentCommentId ?? null })
     .returning();
+  await notify(post.userId, "comment", { postId, fromUserId: userId }, { skipIfActor: userId });
   return comment;
 }
 

@@ -10,6 +10,9 @@ const envSchema = z.object({
   JWT_ACCESS_TTL: z.string().default("15m"),
   JWT_REFRESH_TTL_DAYS: z.coerce.number().default(30),
   WEB_ORIGIN: z.string().default("http://localhost:3000"),
+  // Opcional: si no está seteado o no se puede conectar, el cache de Orbes
+  // cae a un Map en memoria (ver src/lib/cache.ts) — nunca rompe el arranque.
+  REDIS_URL: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

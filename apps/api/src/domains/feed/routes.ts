@@ -1,5 +1,13 @@
 import type { FastifyInstance } from "fastify";
-import { followingFeed, forYouFeed, trendingFeed, nearbyFeed, type FollowingMode } from "./service.js";
+import {
+  followingFeed,
+  forYouFeed,
+  trendingFeed,
+  nearbyFeed,
+  miGenteFeed,
+  type FollowingMode,
+} from "./service.js";
+import { getOrbsForViewer } from "../orbs/service.js";
 
 export async function feedRoutes(app: FastifyInstance) {
   app.get("/feed/following", { preHandler: app.authenticate }, async (req, reply) => {
@@ -25,6 +33,22 @@ export async function feedRoutes(app: FastifyInstance) {
     const query = req.query as { limit?: string };
     const posts = await trendingFeed(query.limit ? Number(query.limit) : undefined);
     return reply.send({ data: posts, error: null });
+  });
+
+  app.get("/feed/mi-gente", { preHandler: app.authenticate }, async (req, reply) => {
+    const { sub } = req.user as { sub: string };
+    const query = req.query as { limit?: string };
+    const posts = await miGenteFeed(sub, query.limit ? Number(query.limit) : undefined);
+    return reply.send({ data: posts, error: null });
+  });
+
+  // Mismas señales que Orbes, presentadas como feed en vez de como capa
+  // visual de actividad — ver kor-arquitectura-v2.1.md §"Orbes" punto 6.
+  app.get("/feed/esta-pasando", { preHandler: app.authenticate }, async (req, reply) => {
+    const { sub } = req.user as { sub: string };
+    const orbs = await getOrbsForViewer(sub);
+    const active = orbs.filter((o) => o.state !== "silencioso");
+    return reply.send({ data: active, error: null });
   });
 
   app.get("/feed/nearby", { preHandler: app.optionalAuthenticate }, async (req, reply) => {

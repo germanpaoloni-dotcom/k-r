@@ -3,6 +3,7 @@ import { db } from "../../db/index.js";
 import { posts, follows, likes } from "../../db/schema.js";
 import { postBaseQuery } from "../social/service.js";
 import { hydratePosts, type PostDto } from "../social/dto.js";
+import { friendIds } from "../friendships/service.js";
 
 const DEFAULT_LIMIT = 20;
 
@@ -74,6 +75,31 @@ export async function trendingFeed(limit = DEFAULT_LIMIT): Promise<PostDto[]> {
   rows.sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
 
   return hydratePosts(rows, undefined);
+}
+
+/**
+ * "Mi gente" — amigos (friendships aceptadas) + follows favoritos. Cero
+ * inferencia: solo gente con la que hay una relación explícita y mutua o
+ * marcada a mano, nunca calculada por comportamiento. Ver kor-arquitectura-v2.1.md.
+ */
+export async function miGenteFeed(userId: string, limit = DEFAULT_LIMIT): Promise<PostDto[]> {
+  const [friends, favoriteRows] = await Promise.all([
+    friendIds(userId),
+    db
+      .select({ followeeId: follows.followeeId })
+      .from(follows)
+      .where(and(eq(follows.followerId, userId), eq(follows.isFavorite, true))),
+  ]);
+
+  const ids = Array.from(new Set([...friends, ...favoriteRows.map((r) => r.followeeId)]));
+  if (ids.length === 0) return [];
+
+  const rows = await postBaseQuery()
+    .where(and(inArray(posts.userId, ids), eq(posts.visibility, "public")))
+    .orderBy(desc(posts.createdAt))
+    .limit(limit);
+
+  return hydratePosts(rows, userId);
 }
 
 export interface NearbyParams {
