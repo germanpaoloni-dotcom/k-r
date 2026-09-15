@@ -78,6 +78,11 @@ export const moderationStatusEnum = pgEnum("moderation_status", [
   "removed",
 ]);
 
+// --- Nuevos enums Fase 4 (Mundo social) ---------------------------------
+
+export const groupVisibilityEnum = pgEnum("group_visibility", ["public", "private"]);
+export const groupRoleEnum = pgEnum("group_role", ["owner", "member"]);
+
 /* ---------------------------------------------------------------------- */
 /* Identidad                                                                */
 /* ---------------------------------------------------------------------- */
@@ -684,8 +689,10 @@ export const gameSessions = pgTable("game_sessions", {
   gameId: uuid("game_id")
     .notNull()
     .references(() => games.id),
-  // Polimórfico como likes/comments: dm (conversationId) | group (a futuro,
-  // sin FK porque `groups` todavía no existe) | event (eventId).
+  // Polimórfico como likes/comments: dm (conversationId) | group (groupId,
+  // `groups` ya existe desde Fase 4) | event (eventId). Sin `.references()`
+  // a propósito, igual que el resto de los targetId polimórficos del schema
+  // — no puede apuntar a una sola tabla.
   contextType: varchar("context_type", { length: 20 }).notNull(),
   contextId: uuid("context_id"),
   status: varchar("status", { length: 20 }).notNull().default("waiting"),
@@ -750,7 +757,7 @@ export const badges = pgTable("badges", {
 
 export const pets = pgTable("pets", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  ownerType: varchar("owner_type", { length: 10 }).notNull(), // user | group (grupo a futuro)
+  ownerType: varchar("owner_type", { length: 10 }).notNull(), // user | group (grupo, dominio Play sigue siendo Fase 5)
   ownerId: uuid("owner_id").notNull(),
   species: varchar("species", { length: 40 }).notNull(),
   name: varchar("name", { length: 40 }).notNull(),
@@ -773,5 +780,51 @@ export const inventory = pgTable(
   },
   (t) => ({
     userItemUnique: uniqueIndex("inventory_user_item_idx").on(t.userId, t.itemType, t.itemId),
+  })
+);
+
+/* ---------------------------------------------------------------------- */
+/* Fase 4 — Mundo social (kor-arquitectura-v2.1.md §25, Fase 4)             */
+/* `events`/`event_attendance` ya existían desde la migración de Fase 0/1  */
+/* (domains/orbs ya las lee para el Orbe de tipo "event") — Fase 4 recién  */
+/* agrega el dominio (`src/domains/events`) que permite crearlos y usarlos.*/
+/* ---------------------------------------------------------------------- */
+
+/**
+ * Grupos — contenedor social liviano, no todavía un espacio de contenido
+ * propio (eso, y la progresión XP/mascota/orbe de grupo, es Fase 5 — ver
+ * domains/play/README.md, que dependía de que esta tabla existiera). El
+ * dueño queda como miembro automático (`role="owner"`) al crear. Visibilidad
+ * "private" solo saca al grupo de `GET /groups` (browse público); todavía no
+ * hay sistema de invitaciones — unirse a un grupo privado requiere conocer
+ * su id, una simplificación deliberada de Fase 4.
+ */
+export const groups = pgTable("groups", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name", { length: 120 }).notNull(),
+  description: text("description"),
+  avatarUrl: text("avatar_url"),
+  visibility: groupVisibilityEnum("visibility").notNull().default("public"),
+  ownerId: uuid("owner_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const groupMembers = pgTable(
+  "group_members",
+  {
+    groupId: uuid("group_id")
+      .notNull()
+      .references(() => groups.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    role: groupRoleEnum("role").notNull().default("member"),
+    joinedAt: timestamp("joined_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.groupId, t.userId] }),
+    userIdx: index("group_members_user_idx").on(t.userId),
   })
 );

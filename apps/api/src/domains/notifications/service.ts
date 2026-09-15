@@ -11,7 +11,13 @@ export type NotificationType =
   | "comment"
   | "mira_esto_reaction"
   | "share"
-  | "message";
+  | "message"
+  // Fase 4 (Mundo social) — todavía sin preferencia propia (no hay campo
+  // "events"/"groups" en notification_preferences), así que van sin gate
+  // por ahora; una preferencia dedicada es una extensión natural, no de
+  // esta fase.
+  | "event_attendance"
+  | "group_join";
 
 const PREFERENCE_BY_TYPE: Record<NotificationType, keyof typeof defaultPreferences | null> = {
   follow: "follows",
@@ -22,6 +28,8 @@ const PREFERENCE_BY_TYPE: Record<NotificationType, keyof typeof defaultPreferenc
   mira_esto_reaction: "miraEsto",
   share: "likes",
   message: "messages",
+  event_attendance: null,
+  group_join: null,
 };
 
 const defaultPreferences = {
