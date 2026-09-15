@@ -16,6 +16,8 @@ packages/
   config/   Config compartida (eslint)
 infra/
   migrations/  Migraciones SQL generadas por Drizzle
+scripts/
+  abrir-bundle.ps1 / .sh   Aplica y pushea automáticamente un bundle de git (ver abajo)
 ```
 
 ## Levantar el proyecto localmente
@@ -56,13 +58,32 @@ npm run dev:api   # http://localhost:4000
 npm run dev:web   # http://localhost:3000
 ```
 
-## Estado actual (Fase 1 — Social core, en progreso)
+## Sincronizar sin push directo (bundles)
+
+Mientras esta sesión de Claude no tenga permiso de push directo al repo, cada avance se entrega como un archivo `.bundle` (por chat). Para aplicarlo sin escribir comandos a mano:
+
+**Windows (PowerShell):**
+```powershell
+.\scripts\abrir-bundle.ps1
+```
+
+**Mac/Linux:**
+```bash
+./scripts/abrir-bundle.sh
+```
+
+Por defecto busca el `.bundle` más reciente en tu carpeta de Descargas, lo aplica sobre `~/kor` (o clona el repo ahí si todavía no existe), pushea a GitHub, y archiva el bundle ya usado en `Descargas/kor-bundles-aplicados`. Nunca pisa commits locales: si no puede aplicar en fast-forward, avisa y no toca nada.
+
+## Estado actual (Fase 1 — Social core: completa)
 
 - ✅ Schema completo de base de datos (27 tablas: identidad, social, negocios, eventos, marketplace, moderación, búsqueda/recomendación).
 - ✅ Dominio **Auth**: registro, login, refresh con rotación de tokens, logout. Probado de punta a punta.
 - ✅ Dominio **Users**: perfil propio (`GET/PATCH /users/me`), perfil público (`GET /users/:id`).
+- ✅ Dominio **Social**: posts (crear/ver/borrar), like/unlike, comentarios, guardado.
+- ✅ Dominio **Follow**: seguir/dejar de seguir, favoritos, followers/following.
+- ✅ Dominio **Feed**: Siguiendo (recomendado/cronológico/favoritos), Para vos, Tendencias, Cerca (PostGIS).
 - ✅ Web: landing, registro, login, perfil (`/me`), con el Design System Liquid Glass aplicado.
-- ⏳ Pendiente (resto de Fase 1): posts, follow, likes, comments, feed Siguiendo + Para vos.
+- ⏳ Próximo (Fase 2): Discover por categorías, búsqueda, mapa. Web todavía no consume posts/feed (solo auth).
 
 ## Decisiones de Fase 0 ya resueltas
 
