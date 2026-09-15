@@ -74,7 +74,7 @@ Mientras esta sesión de Claude no tenga permiso de push directo al repo, cada a
 
 Por defecto busca el `.bundle` más reciente en tu carpeta de Descargas, lo aplica sobre `~/kor` (o clona el repo ahí si todavía no existe), pushea a GitHub, y archiva el bundle ya usado en `Descargas/kor-bundles-aplicados`. Nunca pisa commits locales: si no puede aplicar en fast-forward, avisa y no toca nada.
 
-## Estado actual (Fase 3 — Descubrir: completa)
+## Estado actual (Fase 4 — Mundo social: completa)
 
 Construido y probado de punta a punta según el roadmap de 8 fases de [`kor-arquitectura-v2.1.md`](../../claude/kor-arquitectura-v2.1.md) (Kör pasó de "app de descubrimiento" a red social masiva — ver también v2 y Fase 0 en el mismo lugar).
 
@@ -99,9 +99,15 @@ Construido y probado de punta a punta según el roadmap de 8 fases de [`kor-arqu
 - ✅ **Cerca**: `GET /locations/nearby?lat&lng&radiusKm&category` — lugares reales cerca de un punto (PostGIS `ST_DWithin`), distinto de `/feed/nearby` (que ya existía desde Fase 1 y trae *posts* cerca, no lugares).
 - ✅ **Mapa**: `GET /map/pins?bbox=&category=` — versión liviana de lugares acotada a un bounding box (`ST_Intersects`), pensada para pintar un mapa sin traer la ciudad entera.
 - ✅ **Contenido geolocalizado**: ya estaba resuelto desde Fase 1 (posts/Mirá esto anclables a un lugar); Fase 3 lo conecta con búsqueda, Cerca y la ficha de ubicación.
+
+**Fase 4 — Mundo social (nuevo):**
+
+- ✅ **Grupos**: tablas nuevas `groups`/`group_members`. Crear grupo (dueño = owner automático), `GET /groups` (browse público, con `q` por nombre vía trigram), `GET /groups/mine`, `GET /groups/:id/members`, join/leave. Grupos `private` solo quedan afuera del browse — sin sistema de invitaciones todavía, simplificación deliberada de esta fase. Notifica al dueño cuando alguien se une.
+- ✅ **Eventos sociales**: dominio nuevo sobre `events`/`event_attendance`, que ya existían en el schema desde Fase 0/1 (Orbes ya las leía para el Orbe de tipo "event", pero no había forma de crear nada). Crear evento (valida que el lugar exista), listar con filtros (`category`/`organizerId`/`locationId`/`includePast`), asistencia de 3 estados (`interested`/`going`/`reminder_set`) como upsert real, notificación al organizador en cada cambio.
+- ℹ️ Progresión de grupo (XP/mascota/orbe propio) sigue siendo Fase 5 (Kör Play) — `groups` ahora existe, que era el único bloqueo documentado. Ver `src/domains/play/README.md`.
 - ✅ Web: landing, registro, login, perfil (`/me`) con Liquid Glass. Todavía no consume ningún dominio del backend más allá de auth/perfil.
-- ⏳ Próximo (Fase 4, según roadmap v2.1): Mundo social — grupos, eventos sociales.
-- ⏳ Diferido a más adelante: Kör Play funcional (Fase 5), Marketplace (Fase 6), Kör AI (Fase 7), Escala (Fase 8).
+- ⏳ Próximo (Fase 5, según roadmap v2.1): Kör Play funcional.
+- ⏳ Diferido a más adelante: Marketplace (Fase 6), Kör AI (Fase 7), Escala (Fase 8).
 
 ## Decisiones de Fase 0 ya resueltas
 
