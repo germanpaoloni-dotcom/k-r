@@ -631,3 +631,147 @@ export const contentModeration = pgTable(
     statusIdx: index("content_moderation_status_idx").on(t.status),
   })
 );
+
+/* ---------------------------------------------------------------------- */
+/* Fase 2 — Crear + expresarse (kor-arquitectura-v2.1.md §25, Fase 2)       */
+/* ---------------------------------------------------------------------- */
+
+/**
+ * Decilo — texto corto con hilos. Entidad propia (no una variante de posts)
+ * porque su ciclo de vida es distinto: siempre permanente, siempre texto,
+ * organizado en hilos por `replyToId`. Igual que `comments.parentCommentId`
+ * en el resto del schema, `replyToId` no lleva `.references()` — se resuelve
+ * en la capa de aplicación, no con una FK auto-referencial.
+ */
+export const decilo = pgTable(
+  "decilo",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    body: text("body").notNull(),
+    replyToId: uuid("reply_to_id"),
+    // Heurística explicable (no IA real — ver domains/decilo/intent.ts), igual
+    // espíritu que el resto de los placeholders documentados del proyecto.
+    detectedIntent: varchar("detected_intent", { length: 30 }),
+    visibility: postVisibilityEnum("visibility").notNull().default("public"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    userCreatedIdx: index("decilo_user_created_idx").on(t.userId, t.createdAt),
+    replyToIdx: index("decilo_reply_to_idx").on(t.replyToId),
+  })
+);
+
+/**
+ * Kör Play — groundwork únicamente (Fase 2: "tablas + dominio vacío, sin UI
+ * todavía"). El dominio funcional (src/domains/play con lógica real) es
+ * Fase 5, cuando `groups` ya exista. Ver domains/play/README.md.
+ */
+export const games = pgTable("games", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  key: varchar("key", { length: 40 }).notNull().unique(),
+  name: varchar("name", { length: 80 }).notNull(),
+  rules: jsonb("rules").notNull().default({}),
+  durationSeconds: integer("duration_seconds"),
+  active: boolean("active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const gameSessions = pgTable("game_sessions", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  gameId: uuid("game_id")
+    .notNull()
+    .references(() => games.id),
+  // Polimórfico como likes/comments: dm (conversationId) | group (a futuro,
+  // sin FK porque `groups` todavía no existe) | event (eventId).
+  contextType: varchar("context_type", { length: 20 }).notNull(),
+  contextId: uuid("context_id"),
+  status: varchar("status", { length: 20 }).notNull().default("waiting"),
+  createdBy: uuid("created_by")
+    .notNull()
+    .references(() => users.id),
+  startedAt: timestamp("started_at", { withTimezone: true }),
+  endedAt: timestamp("ended_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const gameAnswers = pgTable("game_answers", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  sessionId: uuid("session_id")
+    .notNull()
+    .references(() => gameSessions.id, { onDelete: "cascade" }),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  answer: jsonb("answer").notNull().default({}),
+  isCorrect: boolean("is_correct"),
+  creditsAwarded: integer("credits_awarded").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/**
+ * Ledger append-only — nunca una columna de balance mutable. El balance se
+ * calcula sumando `delta` (positivo = se gana, negativo = se gasta en
+ * cosméticos). No existe ni existirá una operación de retiro: es una
+ * restricción de diseño, no una política — ver kor-arquitectura-v2.1.md §13.
+ */
+export const korCredits = pgTable("kor_credits", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  delta: integer("delta").notNull(),
+  reason: varchar("reason", { length: 40 }).notNull(),
+  refType: varchar("ref_type", { length: 20 }),
+  refId: uuid("ref_id"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const orbCosmetics = pgTable("orb_cosmetics", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  key: varchar("key", { length: 40 }).notNull().unique(),
+  name: varchar("name", { length: 80 }).notNull(),
+  description: text("description"),
+  creditsCost: integer("credits_cost").notNull(),
+  previewUrl: text("preview_url"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const badges = pgTable("badges", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  key: varchar("key", { length: 40 }).notNull().unique(),
+  name: varchar("name", { length: 80 }).notNull(),
+  description: text("description"),
+  iconUrl: text("icon_url"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const pets = pgTable("pets", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  ownerType: varchar("owner_type", { length: 10 }).notNull(), // user | group (grupo a futuro)
+  ownerId: uuid("owner_id").notNull(),
+  species: varchar("species", { length: 40 }).notNull(),
+  name: varchar("name", { length: 40 }).notNull(),
+  level: integer("level").notNull().default(1),
+  xp: integer("xp").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** Polimórfico: item_type 'cosmetic' -> orb_cosmetics.id, 'badge' -> badges.id. */
+export const inventory = pgTable(
+  "inventory",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    itemType: varchar("item_type", { length: 20 }).notNull(),
+    itemId: uuid("item_id").notNull(),
+    acquiredAt: timestamp("acquired_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    userItemUnique: uniqueIndex("inventory_user_item_idx").on(t.userId, t.itemType, t.itemId),
+  })
+);

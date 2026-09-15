@@ -27,6 +27,8 @@ const postSelect = {
   id: posts.id,
   caption: posts.caption,
   visibility: posts.visibility,
+  kind: posts.kind,
+  medium: posts.medium,
   createdAt: posts.createdAt,
   authorId: users.id,
   username: users.username,
@@ -50,6 +52,11 @@ export interface CreatePostInput {
   locationId?: string;
   visibility?: "public" | "followers" | "private";
   media: { type: "image" | "video"; url: string; thumbnailUrl?: string }[];
+  // kind="creation" es Estudio (dibujo/collage/etc, ver domains/estudio) —
+  // requiere `medium`. kind="video" no es obligatorio pasarlo explícito: se
+  // infiere si toda la media es de tipo video, igual que antes de Fase 2.
+  kind?: "photo" | "video" | "creation";
+  medium?: string;
 }
 
 export async function createPost(
@@ -59,6 +66,11 @@ export async function createPost(
   if (!input.media || input.media.length === 0) {
     throw new SocialError(400, "Un post necesita al menos una foto o video.");
   }
+  if (input.kind === "creation" && !input.medium?.trim()) {
+    throw new SocialError(400, "Una creación de Estudio necesita indicar el medio (ej. dibujo, collage).");
+  }
+
+  const kind = input.kind ?? (input.media.every((m) => m.type === "video") ? "video" : "photo");
 
   const post = firstOrThrow(
     await db
@@ -68,6 +80,8 @@ export async function createPost(
         caption: input.caption ?? null,
         locationId: input.locationId ?? null,
         visibility: input.visibility ?? "public",
+        kind,
+        medium: kind === "creation" ? input.medium!.trim() : null,
       })
       .returning()
   );

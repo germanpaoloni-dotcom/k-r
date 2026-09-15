@@ -15,6 +15,13 @@
       "when": 1789503508980,
       "tag": "0001_brown_raza",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789504917645,
+      "tag": "0002_nosy_metal_master",
+      "breakpoints": true
     }
   ]
 }

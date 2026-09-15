@@ -6,6 +6,8 @@ export interface PostDto {
   id: string;
   caption: string | null;
   visibility: string;
+  kind: string;
+  medium: string | null;
   createdAt: string;
   author: {
     id: string;
@@ -25,6 +27,8 @@ interface BaseRow {
   id: string;
   caption: string | null;
   visibility: string;
+  kind: string;
+  medium: string | null;
   createdAt: Date;
   authorId: string;
   username: string;
@@ -95,6 +99,8 @@ export async function hydratePosts(rows: BaseRow[], viewerId?: string): Promise<
     id: r.id,
     caption: r.caption,
     visibility: r.visibility,
+    kind: r.kind,
+    medium: r.medium,
     createdAt: r.createdAt.toISOString(),
     author: {
       id: r.authorId,

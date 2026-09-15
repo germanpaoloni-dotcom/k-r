@@ -26,6 +26,8 @@ const createPostSchema = z.object({
       })
     )
     .min(1),
+  kind: z.enum(["photo", "video", "creation"]).optional(),
+  medium: z.string().max(30).optional(),
 });
 
 const commentSchema = z.object({

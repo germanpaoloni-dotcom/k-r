@@ -74,27 +74,25 @@ Mientras esta sesión de Claude no tenga permiso de push directo al repo, cada a
 
 Por defecto busca el `.bundle` más reciente en tu carpeta de Descargas, lo aplica sobre `~/kor` (o clona el repo ahí si todavía no existe), pushea a GitHub, y archiva el bundle ya usado en `Descargas/kor-bundles-aplicados`. Nunca pisa commits locales: si no puede aplicar en fast-forward, avisa y no toca nada.
 
-## Estado actual (Fase 1 — Red social real: completa)
+## Estado actual (Fase 2 — Crear + expresarse: completa)
 
-Construido y probado de punta a punta según [`kor-arquitectura-v2.1.md`](../../claude/kor-arquitectura-v2.1.md) (Kör pasó de "app de descubrimiento" a red social masiva — ver también v2 y Fase 0 en el mismo lugar).
+Construido y probado de punta a punta según el roadmap de 8 fases de [`kor-arquitectura-v2.1.md`](../../claude/kor-arquitectura-v2.1.md) (Kör pasó de "app de descubrimiento" a red social masiva — ver también v2 y Fase 0 en el mismo lugar).
 
-- ✅ Schema completo de base de datos (33 tablas — identidad, social, amigos/bloqueo, Mirá esto, compartir, mensajería, notificaciones, moderación centralizada, negocios, eventos, marketplace, búsqueda/recomendación).
-- ✅ Dominio **Auth**: registro, login, refresh con rotación de tokens, logout.
-- ✅ Dominio **Users**: perfil propio, perfil público.
-- ✅ Dominio **Social**: posts (crear/ver/borrar), like/unlike, comentarios, guardado.
-- ✅ Dominio **Follow**: seguir/dejar de seguir, favoritos, followers/following.
-- ✅ Dominio **Friendships** ("Mi gente"): pedido/aceptar/rechazar/eliminar, mutuo — distinto de follow.
-- ✅ Dominio **Blocks**: bloquear/desbloquear, corta follow + friendship, se aplica en follow y mensajería.
-- ✅ Dominio **Mirá esto**: efímero 24h (media/texto/mixto), reacciones, promoción a post permanente, borrado real de vencidos (`npm run cleanup:mira-esto`, pensado para correr como job periódico).
-- ✅ Dominio **Orbes**: servicio de agregación computado (no es tabla) sobre señales de posts/mira_esto/comments/asistencia a eventos, con caché (Redis si está configurado, si no memoria) — `GET /orbs`, agrupación evento+lugar a nivel de render.
-- ✅ Dominio **Shares**: por referencia, nunca duplica contenido — DM reutiliza mensajería, público usa tabla propia.
-- ✅ Dominio **Messaging**: conversaciones directas, mensajes, estado de lectura (`last_read_at`), unsend (soft-delete), bloqueo aplicado.
-- ✅ Dominio **Notifications**: listar/marcar leídas, preferencias por tipo, emitidas desde follow/like/comment/friend request-accept/mira_esto/message.
-- ✅ **Moderación centralizada**: toda denuncia pasa por `content_moderation` (regla dura, ningún dominio la saltea); cola de revisión y resolución simples (rol admin real queda pendiente, documentado como tal).
-- ✅ Feed: Siguiendo, Para vos, Tendencias, Cerca (PostGIS), **Mi gente**, **Está pasando** (mismas señales que Orbes).
-- ✅ Web: landing, registro, login, perfil (`/me`) con Liquid Glass. Todavía no consume el resto de los dominios nuevos.
-- ⏳ Próximo (Fase 2, según roadmap v2.1): Decilo, Crear unificado, Estudio (estas ya tienen columnas `kind`/`medium` preparadas en `posts`), Descubrir/búsqueda/mapa.
-- ⏳ Diferido a más adelante en el roadmap: Kör Play (Fase 5, necesita `groups`), grupos y progresión social, rol de admin/moderador real.
+**Fase 1 — Red social real:**
+
+- ✅ Schema completo de base de datos (identidad, social, amigos/bloqueo, Mirá esto, compartir, mensajería, notificaciones, moderación centralizada, negocios, eventos, marketplace, búsqueda/recomendación).
+- ✅ Auth, Users, Social (posts/likes/comments/guardado), Follow, Friendships ("Mi gente"), Blocks, Mirá esto (efímero 24h, promoción a post, borrado real de vencidos), Orbes (servicio de agregación computado, no tabla, cacheado), Shares (por referencia), Messaging (conversaciones/mensajes/last_read_at/unsend), Notifications (con preferencias), Moderación centralizada (`content_moderation`).
+- ✅ Feed: Siguiendo, Para vos, Tendencias, Cerca (PostGIS), Mi gente, Está pasando.
+
+**Fase 2 — Crear + expresarse (nuevo):**
+
+- ✅ Dominio **Decilo**: texto corto con hilos (`replyToId`), detección de intención por heurística explicable (no IA real todavía — eso es Kör AI, Fase 7), likes, notificaciones en respuestas.
+- ✅ **Estudio**: `posts.kind="creation"` + `medium` (dibujo/collage/etc, validado al crear), galería general (`GET /estudio`) y por usuario (`GET /users/:id/estudio`). No es una entidad nueva, reutiliza `posts`/`media`.
+- ✅ **Kör Play — groundwork únicamente**: las 8 tablas del dominio (`games`, `game_sessions`, `game_answers`, `kor_credits` como ledger append-only, `inventory`, `orb_cosmetics`, `badges`, `pets`) ya están migradas. El dominio (`src/domains/play`) está deliberadamente vacío — sin servicio, sin rutas, sin registrar en `app.ts` — hasta Fase 5, cuando `groups` exista. Ver `src/domains/play/README.md`.
+- ℹ️ **"Crear unificado"** no es un dominio backend nuevo: es un patrón de composición del cliente sobre los endpoints de creación que ya existen (posts, Mirá esto, Decilo, creaciones de Estudio). Se resuelve cuando se construya la UI web/mobile, no acá.
+- ✅ Web: landing, registro, login, perfil (`/me`) con Liquid Glass. Todavía no consume el resto de los dominios nuevos (Fase 1 ni Fase 2).
+- ⏳ Próximo (Fase 3, según roadmap v2.1): Descubrir — búsqueda, Cerca, mapa, lugares, contenido geolocalizado.
+- ⏳ Diferido a más adelante en el roadmap: Mundo social/grupos (Fase 4), Kör Play funcional (Fase 5), Marketplace (Fase 6), Kör AI (Fase 7), Escala (Fase 8).
 
 ## Decisiones de Fase 0 ya resueltas
 
