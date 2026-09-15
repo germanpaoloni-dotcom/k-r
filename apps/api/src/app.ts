@@ -21,6 +21,8 @@ import { notificationsRoutes } from "./domains/notifications/routes.js";
 import { moderationRoutes } from "./domains/moderation/routes.js";
 import { deciloRoutes } from "./domains/decilo/routes.js";
 import { estudioRoutes } from "./domains/estudio/routes.js";
+import { mapRoutes } from "./domains/map/routes.js";
+import { searchRoutes } from "./domains/search/routes.js";
 
 export async function buildApp() {
   const app = Fastify({
@@ -54,6 +56,8 @@ export async function buildApp() {
   await app.register(moderationRoutes, { prefix: "/api/v1" });
   await app.register(deciloRoutes, { prefix: "/api/v1" });
   await app.register(estudioRoutes, { prefix: "/api/v1" });
+  await app.register(mapRoutes, { prefix: "/api/v1" });
+  await app.register(searchRoutes, { prefix: "/api/v1" });
 
   app.setErrorHandler((err: FastifyError, _req, reply) => {
     app.log.error(err);

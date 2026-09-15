@@ -1,8 +1,12 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { eq } from "drizzle-orm";
-import { db } from "../../db/index.js";
-import { locations } from "../../db/schema.js";
+import {
+  createLocation,
+  getLocationById,
+  listLocations,
+  nearbyLocations,
+  getLocationContent,
+} from "./service.js";
 
 const createLocationSchema = z.object({
   name: z.string().min(1).max(160),
@@ -13,26 +17,65 @@ const createLocationSchema = z.object({
   category: z.string().max(60).optional(),
 });
 
-// Endpoint mínimo para que posts/negocios/eventos puedan anclarse a un lugar
-// real. El flujo completo de "sugerir lugar por geolocalización" (sección H
-// del documento de arquitectura) se implementa en Fase 2 (Discover/Mapa).
+// Lugares — Fase 1 dejó la tabla, la columna geoespacial (geog, GiST) y el
+// alta mínima listos. Fase 3 (Descubrir) agrega browse/filtro, "cerca de mí"
+// y la ficha de ubicación con su contenido anclado.
 export async function locationsRoutes(app: FastifyInstance) {
   app.post("/locations", { preHandler: app.authenticate }, async (req, reply) => {
     const parsed = createLocationSchema.safeParse(req.body);
     if (!parsed.success) {
       return reply.status(400).send({ data: null, error: parsed.error.flatten() });
     }
-    const [location] = await db
-      .insert(locations)
-      .values({ ...parsed.data, source: "user" })
-      .returning();
+    const location = await createLocation(parsed.data);
     return reply.status(201).send({ data: location, error: null });
+  });
+
+  app.get("/locations", async (req, reply) => {
+    const query = req.query as { city?: string; category?: string; q?: string; limit?: string };
+    const list = await listLocations({
+      city: query.city,
+      category: query.category,
+      q: query.q,
+      limit: query.limit ? Number(query.limit) : undefined,
+    });
+    return reply.send({ data: list, error: null });
+  });
+
+  app.get("/locations/nearby", async (req, reply) => {
+    const query = req.query as {
+      lat?: string;
+      lng?: string;
+      radiusKm?: string;
+      category?: string;
+    };
+    if (!query.lat || !query.lng) {
+      return reply.status(400).send({ data: null, error: { message: "Faltan lat/lng." } });
+    }
+    const list = await nearbyLocations({
+      lat: Number(query.lat),
+      lng: Number(query.lng),
+      radiusKm: query.radiusKm ? Number(query.radiusKm) : undefined,
+      category: query.category,
+    });
+    return reply.send({ data: list, error: null });
   });
 
   app.get("/locations/:id", async (req, reply) => {
     const { id } = req.params as { id: string };
-    const [location] = await db.select().from(locations).where(eq(locations.id, id));
+    const location = await getLocationById(id);
     if (!location) return reply.status(404).send({ data: null, error: { message: "No encontrado." } });
     return reply.send({ data: location, error: null });
+  });
+
+  app.get("/locations/:id/posts", { preHandler: app.optionalAuthenticate }, async (req, reply) => {
+    const { id } = req.params as { id: string };
+    const viewer = req.user as { sub: string } | undefined;
+    const query = req.query as { limit?: string };
+
+    const location = await getLocationById(id);
+    if (!location) return reply.status(404).send({ data: null, error: { message: "No encontrado." } });
+
+    const content = await getLocationContent(id, viewer?.sub, query.limit ? Number(query.limit) : undefined);
+    return reply.send({ data: content, error: null });
   });
 }
