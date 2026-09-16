@@ -74,7 +74,7 @@ Mientras esta sesión de Claude no tenga permiso de push directo al repo, cada a
 
 Por defecto busca el `.bundle` más reciente en tu carpeta de Descargas, lo aplica sobre `~/kor` (o clona el repo ahí si todavía no existe), pushea a GitHub, y archiva el bundle ya usado en `Descargas/kor-bundles-aplicados`. Nunca pisa commits locales: si no puede aplicar en fast-forward, avisa y no toca nada.
 
-## Estado actual (Fase 6 — Marketplace: completa con pago mockeado)
+## Estado actual (Fase 7 — Kör AI: groundwork heurístico)
 
 Construido y probado de punta a punta según el roadmap de 8 fases de [`kor-arquitectura-v2.1.md`](../../claude/kor-arquitectura-v2.1.md) (Kör pasó de "app de descubrimiento" a red social masiva — ver también v2 y Fase 0 en el mismo lugar).
 
@@ -125,6 +125,14 @@ Construido y probado de punta a punta según el roadmap de 8 fases de [`kor-arqu
 - ✅ **Checkout**: `POST /orders` (valida stock, reserva descontando `products.stock`, calcula comisión 8% sobre subtotal), `GET /orders/mine`, `GET /orders/:id`, `POST /orders/:id/cancel` (restaura stock), `POST /orders/:id/fulfill` (dueño del negocio), `GET /businesses/:id/orders` y `GET /businesses/:id/payouts` (dueño). Comisión se descuenta del payout al negocio, nunca se le suma al comprador.
 - ✅ **Proveedor de pago agnóstico**: `payment-provider.ts` define la interfaz (`createPayment`); `MockPaymentProvider` es la única implementación hoy — simula un checkout hosteado y se resuelve a mano vía `POST /payments/mock-checkout/:orderId/resolve` (hace de webhook). El día que haya credenciales de sandbox de Mercado Pago, se suma `MercadoPagoProvider` sin tocar `orders.service.ts`.
 - ⏳ Todavía sin UI en el web (como el resto de las fases post-Fase 1) ni conector real de Mercado Pago Marketplace.
+
+**Fase 7 — Kör AI (en curso):**
+
+- ✅ **`@kor/ai-gateway`**: la capa agnóstica que README ya venía anunciando como pendiente. Interfaz `AiProvider` (`complete()` + flag `available`); `ClaudeProvider` (llama a la Messages API de Anthropic por `fetch`, sin SDK) se activa solo si existe `ANTHROPIC_API_KEY`; si no, `NullAiProvider` deja `available=false` y cada dominio usa su propio fallback heurístico — nunca rompe por falta de credenciales.
+- ✅ **"¿Qué hago?"**: `POST /ai/que-hago` (`domains/ai`) — extrae categoría + presupuesto del mensaje (con Claude si hay API key, si no con reglas explicables en `heuristics.ts`, mismo criterio que `domains/decilo/intent.ts`) y devuelve hasta 3 tarjetas combinando lugares cercanos (o por categoría, sin geo) y eventos próximos.
+- ✅ **Explicabilidad del feed ("¿por qué veo esto?")**: los 5 feeds (`following`, `for-you`, `trending`, `mi-gente`, `nearby`) ahora devuelven `reasonWhySeeing` en cada post — sin IA, es texto determinístico por algoritmo (ej. "Seguís a @x", "Tendencia — muchos likes esta semana").
+- ⏳ Sin credenciales de Anthropic configuradas en este entorno todavía — todo corre hoy con el fallback heurístico (`source: "heuristic"` en la respuesta de `/ai/que-hago`). Pegar `ANTHROPIC_API_KEY` en `.env` activa `ClaudeProvider` sin tocar código.
+- ⏳ Búsqueda semántica (`content_embeddings`, ya en schema desde Fase 1) queda pendiente: no tiene un mock razonable — requiere un modelo de embeddings real para no ser directamente engañosa, a diferencia del resto de los placeholders del proyecto.
 
 ## Decisiones de Fase 0 ya resueltas
 

@@ -34,13 +34,15 @@ export async function followingFeed(
     .orderBy(desc(posts.createdAt))
     .limit(limit);
 
-  return hydratePosts(rows, userId);
+  const hydrated = await hydratePosts(rows, userId);
+  return hydrated.map((p) => ({ ...p, reasonWhySeeing: `Seguís a @${p.author.username}` }));
 }
 
 /**
  * Para vos — placeholder documentado: posts públicos recientes, excluyendo
- * los propios. El recomendador real (con explicabilidad "¿por qué veo esto?")
- * es Fase 5/6 del roadmap; esto evita un feed vacío mientras tanto.
+ * los propios. `reasonWhySeeing` ya viaja en la respuesta (Fase 7 — Kör AI),
+ * pero el recomendador real con señales de comportamiento sigue pendiente;
+ * esto evita un feed vacío mientras tanto.
  */
 export async function forYouFeed(viewerId?: string, limit = DEFAULT_LIMIT): Promise<PostDto[]> {
   const rows = await postBaseQuery()
@@ -52,7 +54,10 @@ export async function forYouFeed(viewerId?: string, limit = DEFAULT_LIMIT): Prom
     .orderBy(desc(posts.createdAt))
     .limit(limit);
 
-  return hydratePosts(rows, viewerId);
+  const hydrated = await hydratePosts(rows, viewerId);
+  // Sin motor de recomendación con señales reales todavía (ver comentario de
+  // arriba) — la razón es honesta sobre eso, no simula personalización que no existe.
+  return hydrated.map((p) => ({ ...p, reasonWhySeeing: "Público y reciente" }));
 }
 
 export async function trendingFeed(limit = DEFAULT_LIMIT): Promise<PostDto[]> {
@@ -74,7 +79,8 @@ export async function trendingFeed(limit = DEFAULT_LIMIT): Promise<PostDto[]> {
   const order = new Map(ids.map((id, i) => [id, i]));
   rows.sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
 
-  return hydratePosts(rows, undefined);
+  const hydrated = await hydratePosts(rows, undefined);
+  return hydrated.map((p) => ({ ...p, reasonWhySeeing: "Tendencia — muchos likes esta semana" }));
 }
 
 /**
@@ -99,7 +105,8 @@ export async function miGenteFeed(userId: string, limit = DEFAULT_LIMIT): Promis
     .orderBy(desc(posts.createdAt))
     .limit(limit);
 
-  return hydratePosts(rows, userId);
+  const hydrated = await hydratePosts(rows, userId);
+  return hydrated.map((p) => ({ ...p, reasonWhySeeing: "Es tu gente" }));
 }
 
 export interface NearbyParams {
@@ -134,5 +141,6 @@ export async function nearbyFeed(
     .orderBy(desc(posts.createdAt))
     .limit(limit);
 
-  return hydratePosts(rows, viewerId);
+  const hydrated = await hydratePosts(rows, viewerId);
+  return hydrated.map((p) => ({ ...p, reasonWhySeeing: `Cerca tuyo (${params.radiusKm ?? 5} km)` }));
 }
