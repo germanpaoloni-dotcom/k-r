@@ -150,7 +150,7 @@ Construido y probado de punta a punta según el roadmap de 8 fases de [`kor-arqu
 - ✅ **`/p/:id`**: post expandido con comentarios (leer + publicar).
 - ✅ Mockups de las 4 pantallas hechos primero con la skill `design` antes de programar, matcheando los tokens de `packages/ui/src/tokens.css` 1:1.
 - ✅ `Avatar` nuevo en `packages/ui` (color determinístico por usuario + iniciales si no hay foto).
-- ⏳ Sin subida real de archivos (falta un servicio de storage/CDN), sin pantalla de notificaciones (la campanita es decorativa todavía), sin Fases 3/4/5/6/7 en el web (Descubrir, Mundo social, Gossip Play, Marketplace, Gossip AI siguen siendo API-only).
+- ⏳ Sin pantalla de notificaciones (la campanita es decorativa todavía), sin Fases 3/4/5/6/7 en el web (Descubrir, Gossip Play, Marketplace, Gossip AI siguen siendo API-only).
 
 **Perfil ajeno v2 + Gossip Pets (nuevo, paquete "Perfil + Pets" aportado por el usuario):**
 
@@ -161,6 +161,14 @@ Auditado contra la arquitectura real antes de tocar código — dos decisiones d
 - ⚠️ **Adaptación 2 — sin "Nivel" de usuario ni "gente en común" con avatares.** "Nivel"/"Explorador" del mockup original no existe en el schema (nivel es de `pets`, no de `users`) — no se inventó. "Gente en común" quedó en conteo simple, no una lista con avatares (se puede sumar después si hace falta).
 - ✅ **Gossip Pets — fundacional** (catálogo + motor, sin animaciones todavía, alcance elegido explícitamente): tabla nueva `pet_definitions` con las 25 mascotas curadas del paquete (5 perros/gatos/dragones/conejos/aves, sembradas en `post-migrate.sql`, idempotente). `pets.definitionId` nueva (nullable — no rompe los pets libres de Gossip Play/Fase 5, que siguen existiendo tal cual). `GET /pet-definitions`, `POST /pets/adopt`, `GET /users/:id/pet` (público). En el web: `apps/web/lib/pets/engine.ts` implementa el motor de cooldowns que pide `CLAUDE_INSTRUCTIONS.md` (global + por interacción + por superficie + exclusión de pantallas críticas + `prefers-reduced-motion`) — listo para que la Fase 2 (animaciones: robar foto, ensuciar el feed, incendiar pantalla, etc.) lo consuma sin rediseñarlo. Picker de adopción en `/me`, `PetSummary` reusado en perfil propio y ajeno.
 - ⏳ Deliberadamente afuera de esta pasada (Fase 2 del feature, tamaño propio): las 8 interacciones animadas (`PetInteractionLayer`, requiere agregar la dependencia `motion`), el layer global montado en el shell de la app, configuración de sonido/frecuencia/silenciar mascotas, integración con Créditos Gossip para cosméticos.
+
+**Subida real de archivos, chat y perfil propio (nuevo):**
+
+- ✅ **Subida de archivos**: `POST /uploads` (multipart, `@fastify/multipart`), guarda a disco local (`apps/api/uploads/`, gitignored) y sirve por `@fastify/static` en `/uploads/:filename`. Sin storage/CDN externo todavía — para el dev actual, disco del server alcanza. `/create` y `/me/edit` ahora dejan elegir un archivo real desde la PC o el celular (`<input type="file">` nativo, que en mobile ya ofrece cámara/galería) en vez de pegar una URL.
+- ✅ **Chat**: `/messages` (inbox — avatar/nombre/preview/badge de no leídos) y `/messages/:id` (hilo — burbujas propias en fucsia a la derecha, ajenas en gris a la izquierda, poll cada 4s mientras la pantalla está abierta). Arranca una conversación el botón de mensaje en el perfil ajeno (`POST /conversations`, ya existía en el backend desde Fase 1, sin UI hasta ahora).
+- ✅ **Perfil propio (`/me`) reescrito** con el mismo criterio didáctico del perfil ajeno: "Tu actividad" (likes/comentarios/impresiones totales — `GET /analytics/creator`, ya existía desde Fase 8, sin UI hasta ahora; Instagram no te muestra esto en tu propio perfil), mascota, "lo que más vibra en tu mundo", tus publicaciones (lista, no grid), y un botón real de "Editar perfil" → `/me/edit` (nombre, bio, foto — con subida real, `PATCH /users/me`).
+- ✅ **Favicon** actualizado al ícono oficial del brand kit (`g` negra sobre blanco).
+- ✅ **Scripts de simulación**: `npm run seed:demo-contacts -- tu@email.com` crea 10 contactos ficticios (`demo_*`) que siguen/son amigos de/le escriben a esa cuenta real y postean en San Salvador de Jujuy — para probar el feed/chat/perfil con datos reales sin esperar usuarios de verdad. `npm run unseed:demo-contacts` los borra (el delete de `users` cascadea todo lo demás).
 
 ## Decisiones de Fase 0 ya resueltas
 

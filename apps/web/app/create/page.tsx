@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeftIcon, MapPinIcon, XIcon } from "../../components/icons";
-import { getSession, createPost, searchLocations, type LocationDto } from "../../lib/api";
+import { ChevronLeftIcon, MapPinIcon, XIcon, ImageIcon } from "../../components/icons";
+import { getSession, createPost, searchLocations, uploadFile, type LocationDto, type UploadResult } from "../../lib/api";
 
 type Visibility = "public" | "followers" | "private";
 
@@ -15,8 +15,11 @@ const VISIBILITY_OPTIONS: { id: Visibility; label: string }[] = [
 
 export default function CreatePostPage() {
   const router = useRouter();
-  const [mediaUrl, setMediaUrl] = useState("");
-  const [mediaType, setMediaType] = useState<"image" | "video">("image");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [upload, setUpload] = useState<UploadResult | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [caption, setCaption] = useState("");
   const [visibility, setVisibility] = useState<Visibility>("public");
 
@@ -43,10 +46,33 @@ export default function CreatePostPage() {
     return () => clearTimeout(timer);
   }, [locationQuery, location]);
 
+  async function onFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setError(null);
+    setPreviewUrl(URL.createObjectURL(file));
+    setUpload(null);
+    setUploading(true);
+    const res = await uploadFile(file);
+    setUploading(false);
+    if (res.error || !res.data) {
+      setError(res.error?.message ?? "No pudimos subir el archivo.");
+      setPreviewUrl(null);
+      return;
+    }
+    setUpload(res.data);
+  }
+
+  function clearMedia() {
+    setPreviewUrl(null);
+    setUpload(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
   async function onSubmit() {
     setError(null);
-    if (!mediaUrl.trim()) {
-      setError("Pegá la URL de una foto o video para publicar.");
+    if (!upload) {
+      setError("Subí una foto o video para publicar.");
       return;
     }
     setLoading(true);
@@ -54,7 +80,7 @@ export default function CreatePostPage() {
       caption: caption.trim() || undefined,
       locationId: location?.id,
       visibility,
-      media: [{ type: mediaType, url: mediaUrl.trim() }],
+      media: [{ type: upload.type, url: upload.url }],
     });
     setLoading(false);
     if (res.error || !res.data) {
@@ -64,7 +90,7 @@ export default function CreatePostPage() {
     router.push(`/p/${res.data.id}`);
   }
 
-  const canSubmit = mediaUrl.trim().length > 0 && !loading;
+  const canSubmit = Boolean(upload) && !loading && !uploading;
 
   return (
     <main className="mx-auto min-h-screen max-w-lg">
@@ -83,29 +109,52 @@ export default function CreatePostPage() {
       </div>
 
       <div className="flex flex-col gap-5 px-4 py-5">
-        {/* Sin servicio de subida de archivos todavía — por ahora se publica
-            desde una URL pública ya alojada (ej. un link de imagen). */}
         <div className="flex flex-col gap-2">
-          <span className="text-[12.5px] font-medium text-text-muted">URL de la foto o video</span>
+          <span className="text-[12.5px] font-medium text-text-muted">Foto o video</span>
+
           <input
-            value={mediaUrl}
-            onChange={(e) => setMediaUrl(e.target.value)}
-            placeholder="https://…"
-            className="rounded-md border border-border bg-surface px-3.5 py-2.5 text-[14px] text-text outline-none focus:border-accent"
+            ref={fileInputRef}
+            type="file"
+            accept="image/*,video/*"
+            onChange={onFileSelected}
+            className="hidden"
           />
-          <div className="flex gap-1.5">
-            {(["image", "video"] as const).map((t) => (
+
+          {!previewUrl && (
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="flex h-[190px] flex-col items-center justify-center gap-2 rounded-md border border-dashed border-border text-text-muted"
+            >
+              <ImageIcon size={28} />
+              <span className="text-[13.5px]">Elegí una foto o video</span>
+              <span className="text-[11.5px]">Desde tu PC o tu celular</span>
+            </button>
+          )}
+
+          {previewUrl && (
+            <div className="relative overflow-hidden rounded-md border border-border">
+              {upload?.type === "video" ? (
+                <video src={previewUrl} className="h-[220px] w-full object-cover" controls />
+              ) : (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={previewUrl} alt="" className="h-[220px] w-full object-cover" />
+              )}
+              {uploading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/40 text-[13px] text-white">
+                  Subiendo…
+                </div>
+              )}
               <button
-                key={t}
-                onClick={() => setMediaType(t)}
-                className={`rounded-full px-3 py-1 text-[12px] font-medium ${
-                  mediaType === t ? "bg-accent-soft text-accent" : "text-text-muted"
-                }`}
+                type="button"
+                onClick={clearMedia}
+                aria-label="Quitar"
+                className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white"
               >
-                {t === "image" ? "Foto" : "Video"}
+                <XIcon size={14} />
               </button>
-            ))}
-          </div>
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col gap-2">

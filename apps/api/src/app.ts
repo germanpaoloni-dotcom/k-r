@@ -3,7 +3,11 @@ import cors from "@fastify/cors";
 import jwt from "@fastify/jwt";
 import rateLimit from "@fastify/rate-limit";
 import sensible from "@fastify/sensible";
+import multipart from "@fastify/multipart";
+import fastifyStatic from "@fastify/static";
+import { mkdirSync } from "fs";
 import { config } from "./config.js";
+import { UPLOAD_DIR } from "./domains/uploads/service.js";
 import authenticate from "./plugins/authenticate.js";
 import { authRoutes } from "./domains/auth/routes.js";
 import { usersRoutes } from "./domains/users/routes.js";
@@ -29,6 +33,7 @@ import { playRoutes } from "./domains/play/routes.js";
 import { marketplaceRoutes } from "./domains/marketplace/routes.js";
 import { aiRoutes } from "./domains/ai/routes.js";
 import { analyticsRoutes } from "./domains/analytics/routes.js";
+import { uploadsRoutes } from "./domains/uploads/routes.js";
 
 export async function buildApp() {
   const app = Fastify({
@@ -46,6 +51,11 @@ export async function buildApp() {
   await app.register(rateLimit, { max: 100, timeWindow: "1 minute" });
   await app.register(jwt, { secret: config.JWT_ACCESS_SECRET });
   await app.register(authenticate);
+  await app.register(multipart, { limits: { fileSize: 25 * 1024 * 1024 } });
+  // Sirve los archivos subidos (ver domains/uploads) — sin storage/CDN
+  // externo todavía, disco local del servidor alcanza para el dev actual.
+  mkdirSync(UPLOAD_DIR, { recursive: true });
+  await app.register(fastifyStatic, { root: UPLOAD_DIR, prefix: "/uploads/" });
 
   app.get("/health", async () => ({ status: "ok", service: "@gossip/api" }));
 
@@ -73,6 +83,7 @@ export async function buildApp() {
   await app.register(marketplaceRoutes, { prefix: "/api/v1" });
   await app.register(aiRoutes, { prefix: "/api/v1" });
   await app.register(analyticsRoutes, { prefix: "/api/v1" });
+  await app.register(uploadsRoutes, { prefix: "/api/v1" });
 
   app.setErrorHandler((err: FastifyError, _req, reply) => {
     app.log.error(err);

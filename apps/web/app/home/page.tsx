@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Avatar } from "@gossip/ui";
-import { BellIcon, PlusIcon } from "../../components/icons";
+import { BellIcon, PlusIcon, MessageSquareIcon } from "../../components/icons";
 import { PostCard } from "../../components/PostCard";
 import { getSession, getFeed, me, type FeedTab, type PostDto, type UserPublic } from "../../lib/api";
 
@@ -79,6 +79,9 @@ export default function HomePage() {
           <span className="font-display text-[17px] font-semibold tracking-tight">Gossip</span>
         </span>
         <div className="flex items-center gap-3.5">
+          <Link href="/messages" aria-label="Mensajes">
+            <MessageSquareIcon size={22} className="text-text" />
+          </Link>
           <BellIcon size={22} className="text-text" />
           {user && (
             <Link href="/me">

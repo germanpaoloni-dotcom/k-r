@@ -312,3 +312,108 @@ export function getUserPet(userId: string) {
 export function adoptPet(definitionId: string) {
   return authRequest<PetDto>("/pets/adopt", { method: "POST", body: JSON.stringify({ definitionId }) });
 }
+
+/* ---------------------------------------------------------------------- */
+/* Subida de archivos (foto/video desde la PC o el celular)                */
+/* ---------------------------------------------------------------------- */
+
+export interface UploadResult {
+  url: string;
+  type: "image" | "video";
+}
+
+/** No pasa por `request()` a propósito: FormData necesita que el browser
+ * ponga su propio Content-Type con boundary, nunca "application/json". */
+export async function uploadFile(file: File): Promise<ApiEnvelope<UploadResult>> {
+  const session = getSession();
+  const form = new FormData();
+  form.append("file", file);
+  const res = await fetch(`${API_URL}/api/v1/uploads`, {
+    method: "POST",
+    headers: session ? { Authorization: `Bearer ${session.accessToken}` } : {},
+    body: form,
+  });
+  return (await res.json()) as ApiEnvelope<UploadResult>;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Mensajes (chat 1:1)                                                      */
+/* ---------------------------------------------------------------------- */
+
+export interface LastMessageDto {
+  id: string;
+  body: string | null;
+  deleted: boolean;
+  attachmentType: string | null;
+  senderId: string;
+  createdAt: string;
+}
+
+export interface ConversationDto {
+  id: string;
+  type: "direct" | "group";
+  participants: FollowUser[];
+  lastMessage: LastMessageDto | null;
+  unreadCount: number;
+}
+
+export interface MessageDto {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  body: string | null;
+  attachmentType: string | null;
+  attachmentId: string | null;
+  deleted: boolean;
+  createdAt: string;
+}
+
+export function getConversations() {
+  return authRequest<ConversationDto[]>("/conversations");
+}
+
+export function startConversation(userId: string) {
+  return authRequest<{ id: string }>("/conversations", { method: "POST", body: JSON.stringify({ userId }) });
+}
+
+export function getMessages(conversationId: string) {
+  return authRequest<MessageDto[]>(`/conversations/${conversationId}/messages`);
+}
+
+export function sendChatMessage(conversationId: string, body: string) {
+  return authRequest<MessageDto>(`/conversations/${conversationId}/messages`, {
+    method: "POST",
+    body: JSON.stringify({ body }),
+  });
+}
+
+export function markConversationRead(conversationId: string) {
+  return authRequest<null>(`/conversations/${conversationId}/read`, { method: "POST", body: "{}" });
+}
+
+/* ---------------------------------------------------------------------- */
+/* Perfil propio y analytics de creador                                     */
+/* ---------------------------------------------------------------------- */
+
+export function updateProfile(input: { displayName?: string; bio?: string; avatarUrl?: string }) {
+  return authRequest<UserPublic>("/users/me", { method: "PATCH", body: JSON.stringify(input) });
+}
+
+export interface CreatorAnalytics {
+  postCount: number;
+  totalLikes: number;
+  totalComments: number;
+  totalImpressions: number;
+  topPosts: {
+    id: string;
+    caption: string | null;
+    createdAt: string;
+    likeCount: number;
+    commentCount: number;
+    impressions: number;
+  }[];
+}
+
+export function getCreatorAnalytics() {
+  return authRequest<CreatorAnalytics>("/analytics/creator");
+}

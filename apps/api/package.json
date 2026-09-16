@@ -10,13 +10,17 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/db/migrate.ts",
     "cleanup:mira-esto": "tsx src/scripts/cleanup-mira-esto.ts",
-    "settle:payouts": "tsx src/scripts/settle-payouts.ts"
+    "settle:payouts": "tsx src/scripts/settle-payouts.ts",
+    "seed:demo-contacts": "tsx src/scripts/seed-demo-contacts.ts",
+    "unseed:demo-contacts": "tsx src/scripts/unseed-demo-contacts.ts"
   },
   "dependencies": {
     "@fastify/cors": "^10.0.1",
     "@fastify/jwt": "^9.0.1",
+    "@fastify/multipart": "^10.1.1",
     "@fastify/rate-limit": "^10.1.1",
     "@fastify/sensible": "^6.0.2",
+    "@fastify/static": "^10.1.3",
     "@gossip/ai-gateway": "*",
     "@gossip/types": "*",
     "bcryptjs": "^2.4.3",

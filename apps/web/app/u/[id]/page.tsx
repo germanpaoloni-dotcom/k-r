@@ -8,6 +8,7 @@ import {
   MoreHorizontalIcon,
   ShareIcon,
   MapPinIcon,
+  MessageSquareIcon,
 } from "../../../components/icons";
 import { PostCard } from "../../../components/PostCard";
 import { PetSummary } from "../../../components/pets/PetSummary";
@@ -24,6 +25,7 @@ import {
   requestFriendship,
   getFriends,
   getFriendRequests,
+  startConversation,
   me,
   type UserPublic,
   type PostDto,
@@ -153,6 +155,11 @@ export default function ProfilePage() {
     setTimeout(() => setShared(false), 2000);
   }
 
+  async function messageUser() {
+    const res = await startConversation(userId);
+    if (res.data) router.push(`/messages/${res.data.id}`);
+  }
+
   if (loading) {
     return <main className="flex min-h-screen items-center justify-center text-text-muted">Cargando…</main>;
   }
@@ -213,6 +220,13 @@ export default function ProfilePage() {
           }`}
         >
           {isOrbiting ? "En tu órbita" : "Sumar a tu órbita"}
+        </button>
+        <button
+          onClick={messageUser}
+          aria-label="Enviar mensaje"
+          className="flex h-[42px] w-[42px] flex-shrink-0 items-center justify-center rounded-md border border-border text-text-muted"
+        >
+          <MessageSquareIcon size={17} />
         </button>
         <button
           onClick={shareProfile}
