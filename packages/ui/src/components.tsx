@@ -34,6 +34,48 @@ export function GlassSurface({
   );
 }
 
+const AVATAR_PALETTE = ["#4a7a5a", "#7a5a4a", "#5a4a7a", "#3a5a7a", "#4a5a7a", "#7a4a5a", "#5a7a4a", "#7a6a3a"];
+
+function colorForSeed(seed: string): string {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
+  return AVATAR_PALETTE[hash % AVATAR_PALETTE.length]!;
+}
+
+export interface AvatarProps extends HTMLAttributes<HTMLDivElement> {
+  src?: string | null;
+  /** Usado para el color de fondo placeholder y las iniciales — username o displayName. */
+  seed: string;
+  size?: number;
+}
+
+/** Avatar circular — imagen si hay `src`, si no un color determinístico por `seed` con iniciales. */
+export function Avatar({ src, seed, size = 36, className = "", style, ...props }: AvatarProps) {
+  const dimension = { width: size, height: size, ...style };
+  if (src) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return (
+      <img
+        src={src}
+        alt=""
+        className={`rounded-full object-cover ${className}`}
+        style={dimension}
+        {...(props as HTMLAttributes<HTMLImageElement>)}
+      />
+    );
+  }
+  const initials = seed.trim().slice(0, 1).toUpperCase();
+  return (
+    <div
+      className={`flex flex-shrink-0 items-center justify-center rounded-full font-display font-semibold text-white/90 ${className}`}
+      style={{ ...dimension, background: colorForSeed(seed), fontSize: size * 0.4 }}
+      {...props}
+    >
+      {initials}
+    </div>
+  );
+}
+
 /** Tarjeta sólida de contenido — feed, listas, formularios. */
 export function Card({
   children,

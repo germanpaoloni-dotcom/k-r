@@ -39,7 +39,10 @@ export async function buildApp() {
   });
 
   await app.register(sensible);
-  await app.register(cors, { origin: config.WEB_ORIGIN, credentials: true });
+  // WEB_ORIGIN admite una lista separada por comas (ej. localhost de dev +
+  // un túnel temporal) — @fastify/cors acepta un array de orígenes nativo.
+  const webOrigins = config.WEB_ORIGIN.split(",").map((o) => o.trim());
+  await app.register(cors, { origin: webOrigins, credentials: true });
   await app.register(rateLimit, { max: 100, timeWindow: "1 minute" });
   await app.register(jwt, { secret: config.JWT_ACCESS_SECRET });
   await app.register(authenticate);

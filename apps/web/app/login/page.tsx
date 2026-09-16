@@ -23,7 +23,7 @@ export default function LoginPage() {
       return;
     }
     saveSession(res.data.tokens);
-    router.push("/me");
+    router.push("/home");
   }
 
   return (

@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { db } from "../../db/index.js";
 import {
   posts,
@@ -107,6 +107,15 @@ export async function getPostById(postId: string, viewerId?: string): Promise<Po
   return dto ?? null;
 }
 
+/** Publicaciones públicas de un usuario — perfil ajeno (Fase de UI web). */
+export async function listUserPosts(userId: string, viewerId?: string, limit = 30): Promise<PostDto[]> {
+  const rows = await baseQuery()
+    .where(and(eq(posts.userId, userId), eq(posts.visibility, "public")))
+    .orderBy(desc(posts.createdAt))
+    .limit(limit);
+  return hydratePosts(rows, viewerId);
+}
+
 export async function deletePost(postId: string, userId: string) {
   const [post] = await db.select().from(posts).where(eq(posts.id, postId));
   if (!post) throw new SocialError(404, "Post no encontrado.");
@@ -129,6 +138,23 @@ export async function unlikePost(postId: string, userId: string) {
     .where(and(eq(likes.userId, userId), eq(likes.targetType, "post"), eq(likes.targetId, postId)));
 }
 
+const commentSelect = {
+  id: comments.id,
+  body: comments.body,
+  parentCommentId: comments.parentCommentId,
+  createdAt: comments.createdAt,
+  author: {
+    id: users.id,
+    username: users.username,
+    displayName: users.displayName,
+    avatarUrl: users.avatarUrl,
+  },
+};
+
+function commentBaseQuery() {
+  return db.select(commentSelect).from(comments).innerJoin(users, eq(users.id, comments.userId));
+}
+
 export async function addComment(
   postId: string,
   userId: string,
@@ -138,32 +164,20 @@ export async function addComment(
   const [post] = await db.select().from(posts).where(eq(posts.id, postId));
   if (!post) throw new SocialError(404, "Post no encontrado.");
 
-  const [comment] = await db
+  const [inserted] = await db
     .insert(comments)
     .values({ postId, userId, body, parentCommentId: parentCommentId ?? null })
     .returning();
   await notify(post.userId, "comment", { postId, fromUserId: userId }, { skipIfActor: userId });
+
+  // Misma forma que listComments (con `author` hidratado) — sin esto el
+  // caller de POST /posts/:id/comments recibe un DTO distinto al de GET.
+  const [comment] = await commentBaseQuery().where(eq(comments.id, inserted!.id));
   return comment;
 }
 
 export async function listComments(postId: string) {
-  return db
-    .select({
-      id: comments.id,
-      body: comments.body,
-      parentCommentId: comments.parentCommentId,
-      createdAt: comments.createdAt,
-      author: {
-        id: users.id,
-        username: users.username,
-        displayName: users.displayName,
-        avatarUrl: users.avatarUrl,
-      },
-    })
-    .from(comments)
-    .innerJoin(users, eq(users.id, comments.userId))
-    .where(eq(comments.postId, postId))
-    .orderBy(comments.createdAt);
+  return commentBaseQuery().where(eq(comments.postId, postId)).orderBy(comments.createdAt);
 }
 
 async function getOrCreateDefaultCollection(userId: string) {

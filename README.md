@@ -105,7 +105,7 @@ Construido y probado de punta a punta según el roadmap de 8 fases de [`kor-arqu
 - ✅ **Grupos**: tablas nuevas `groups`/`group_members`. Crear grupo (dueño = owner automático), `GET /groups` (browse público, con `q` por nombre vía trigram), `GET /groups/mine`, `GET /groups/:id/members`, join/leave. Grupos `private` solo quedan afuera del browse — sin sistema de invitaciones todavía, simplificación deliberada de esta fase. Notifica al dueño cuando alguien se une.
 - ✅ **Eventos sociales**: dominio nuevo sobre `events`/`event_attendance`, que ya existían en el schema desde Fase 0/1 (Orbes ya las leía para el Orbe de tipo "event", pero no había forma de crear nada). Crear evento (valida que el lugar exista), listar con filtros (`category`/`organizerId`/`locationId`/`includePast`), asistencia de 3 estados (`interested`/`going`/`reminder_set`) como upsert real, notificación al organizador en cada cambio.
 - ℹ️ Progresión de grupo (XP/mascota/orbe propio) quedó desbloqueada para Fase 5 en cuanto `groups` existió acá.
-- ✅ Web: landing, registro, login, perfil (`/me`) con Liquid Glass. Todavía no consume ningún dominio del backend más allá de auth/perfil.
+- ✅ Web: landing, registro, login, perfil (`/me`) con Liquid Glass. Loop social core agregado más adelante (ver sección siguiente) — `/home`, `/create`, `/u/:id`, `/p/:id`.
 
 **Fase 5 — Kör Play (nuevo):**
 
@@ -141,6 +141,16 @@ Construido y probado de punta a punta según el roadmap de 8 fases de [`kor-arqu
 - ✅ **Publicidad**: tabla `promotions` nueva — `POST /businesses/:id/promotions` (negocio o producto propio, mismo circuito de pago mockeado que `orders`), `GET /businesses/:id/promotions`, resolución vía `POST /payments/mock-checkout-promotion/:id/resolve`. `GET /businesses` y `GET /products` rankean lo promocionado activo primero, siempre con `isPromoted:true` explícito (nunca mezclado de forma indistinguible de lo orgánico).
 - ✅ **Infra/perf**: índices que faltaban en `orders`/`order_items`/`payments`/`payouts`/`recommendations` (Fase 6/7 los había dejado sin cubrir), rate limit propio para `/auth/login` y `/auth/register` (10/min vs. 100/min global — mitiga fuerza bruta), `npm run settle:payouts` (script standalone, mismo patrón que `cleanup:mira-esto`) liquida los payouts cuyo `scheduledAt` ya pasó.
 - ⏳ Todo lo de arriba corre a escala de MVP (scoring en memoria sobre hasta 150 candidatos, sin cache de resultados, sin cola de jobs real) — pensado para no quedar mal diseñado cuando haya que crecerlo, no para carga de producción todavía.
+
+**Web — loop social core (nuevo):**
+
+- ✅ **`/home`**: feed con tabs (Para vos / Siguiendo / Cerca / Tendencias / Mi gente), cada post muestra `reasonWhySeeing`, like/comentar/guardar/compartir, feedback "no me interesa" (✕ en el badge) que llama `POST /feed/for-you/:id/dismiss`. Cerca pide geolocalización del navegador y degrada con un mensaje si se la niegan.
+- ✅ **`/create`**: publicar un post real contra `POST /posts` — sin servicio de subida de archivos todavía, así que la foto/video se pega por URL (no hay drag-and-drop de un archivo local). Tag de lugar con autocompletado (`GET /locations?q=`), selector de visibilidad.
+- ✅ **`/u/:id`**: perfil ajeno — **rediseñado a propósito para no calcar el layout de perfil de Instagram** (identidad alineada a la izquierda en vez de centrada, stats como texto plano en vez de columnas clickeables, botones Seguir/Mensaje compactos en la misma fila que el avatar). El listado de posts reusa el mismo `PostCard` del feed en una lista vertical, no un grid cuadrado de fotos — más fiel al dato real (no todo post de Kōr es imagen).
+- ✅ **`/p/:id`**: post expandido con comentarios (leer + publicar).
+- ✅ Mockups de las 4 pantallas hechos primero con la skill `design` antes de programar, matcheando los tokens de `packages/ui/src/tokens.css` 1:1.
+- ✅ `Avatar` nuevo en `packages/ui` (color determinístico por usuario + iniciales si no hay foto).
+- ⏳ Sin subida real de archivos (falta un servicio de storage/CDN), sin pantalla de notificaciones (la campanita es decorativa todavía), sin Fases 3/4/5/6/7 en el web (Descubrir, Mundo social, Kör Play, Marketplace, Kör AI siguen siendo API-only).
 
 ## Decisiones de Fase 0 ya resueltas
 
