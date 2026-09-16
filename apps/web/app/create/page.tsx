@@ -113,7 +113,7 @@ export default function CreatePostPage() {
           <textarea
             value={caption}
             onChange={(e) => setCaption(e.target.value)}
-            placeholder="Contá qué está pasando..."
+            placeholder="Gossipeá algo..."
             rows={3}
             className="resize-none rounded-md border border-border bg-surface px-3.5 py-2.5 text-[14px] text-text outline-none focus:border-accent"
           />
@@ -172,7 +172,7 @@ export default function CreatePostPage() {
           </div>
         </div>
 
-        {error && <p className="text-[13px] text-accent-2">{error}</p>}
+        {error && <p className="text-[13px] text-error">{error}</p>}
       </div>
     </main>
   );

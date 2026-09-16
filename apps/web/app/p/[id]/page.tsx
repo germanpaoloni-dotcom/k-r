@@ -135,9 +135,9 @@ function PostDetailView({
           <button
             onClick={toggleLike}
             aria-label={liked ? "Quitar me gusta" : "Me gusta"}
-            className="flex items-center gap-1.5 text-text-muted hover:text-accent-2"
+            className="flex items-center gap-1.5 text-text-muted hover:text-accent"
           >
-            {liked ? <HeartFilledIcon size={22} className="text-accent-2" /> : <HeartIcon size={22} />}
+            {liked ? <HeartFilledIcon size={22} className="text-accent" /> : <HeartIcon size={22} />}
             <span className="text-[13px]">{likeCount}</span>
           </button>
           <span className="flex items-center gap-1.5 text-text-muted">

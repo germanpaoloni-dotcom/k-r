@@ -53,7 +53,7 @@ export default function LoginPage() {
           />
         </label>
 
-        {error && <p className="text-[13px] text-accent-2">{error}</p>}
+        {error && <p className="text-[13px] text-error">{error}</p>}
 
         <button
           type="submit"

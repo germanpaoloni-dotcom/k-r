@@ -73,7 +73,11 @@ export default function HomePage() {
   return (
     <main className="relative mx-auto min-h-screen max-w-lg pb-24">
       <div className="flex items-center justify-between px-4 pb-2 pt-4">
-        <span className="font-display text-[17px] font-semibold tracking-tight">Gossip</span>
+        <span className="flex items-center gap-2">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo-symbol.png" alt="" width={24} height={24} />
+          <span className="font-display text-[17px] font-semibold tracking-tight">Gossip</span>
+        </span>
         <div className="flex items-center gap-3.5">
           <BellIcon size={22} className="text-text" />
           {user && (
@@ -122,7 +126,7 @@ export default function HomePage() {
 
       <Link
         href="/create"
-        className="gossip-glass fixed bottom-6 right-4 flex h-[52px] w-[52px] items-center justify-center rounded-full"
+        className="fixed bottom-6 right-4 flex h-[52px] w-[52px] items-center justify-center rounded-full bg-accent text-white shadow-lg"
         aria-label="Crear post"
       >
         <PlusIcon size={22} />

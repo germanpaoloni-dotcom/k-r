@@ -30,7 +30,11 @@ export default function HomePage() {
   return (
     <main className="mx-auto max-w-5xl px-5">
       <nav className="gossip-glass sticky top-4 z-10 mt-4 flex items-center justify-between rounded-full px-5 py-3">
-        <span className="font-display text-[15px] font-semibold tracking-tight">Gossip</span>
+        <span className="flex items-center gap-2">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo-symbol.png" alt="" width={22} height={22} />
+          <span className="font-display text-[15px] font-semibold tracking-tight">Gossip</span>
+        </span>
         <div className="flex items-center gap-2">
           <Link
             href="/login"

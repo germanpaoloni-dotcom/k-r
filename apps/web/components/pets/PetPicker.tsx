@@ -42,7 +42,7 @@ export function PetPicker({
           </button>
         ))}
       </div>
-      {error && <p className="mt-3 text-[13px] text-accent-2">{error}</p>}
+      {error && <p className="mt-3 text-[13px] text-error">{error}</p>}
     </div>
   );
 }

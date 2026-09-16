@@ -1,37 +1,40 @@
 /**
- * Gossip Design System — Liquid Glass
+ * Gossip Design System
  * Tokens compartidos entre apps/web y (más adelante) apps/mobile.
- * El vidrio se usa solo en superficies flotantes (nav, sheets, modales).
- * El contenido de fondo (feed, texto largo, formularios) usa --surface sólido.
+ * Brand system: blanco, negro (ink), fucsia — ver ARCHIVOS KOR/brand-kit.
+ * "Premium sin 3D": sin vidrio esmerilado ni degradados; el fucsia es un
+ * evento visual puntual (CTA, foco, estado activo), no un relleno.
  */
 
 :root {
-  color-scheme: dark light;
+  color-scheme: light;
 
-  --gossip-bg: #0b0e14;
-  --gossip-surface: #12151c;
-  --gossip-surface-2: #181c25;
-  --gossip-border: #242732;
+  --gossip-bg: #ffffff;
+  --gossip-surface: #f5f5f7;
+  --gossip-surface-2: #ececef;
+  --gossip-border: #e5e5e8;
 
-  --gossip-glass-bg: rgba(255, 255, 255, 0.08);
-  --gossip-glass-border: rgba(255, 255, 255, 0.14);
-  --gossip-glass-blur: 24px;
+  /* Superficies "flotantes" (nav, sheets) — elevadas por sombra, no por blur. */
+  --gossip-glass-bg: #ffffff;
+  --gossip-glass-border: #e5e5e8;
+  --gossip-glass-blur: 0px;
 
-  --gossip-text: #f2f3f7;
-  --gossip-text-muted: rgba(242, 243, 247, 0.62);
+  --gossip-text: #111111;
+  --gossip-text-muted: rgba(17, 17, 17, 0.6);
 
-  --gossip-accent: #5b8cff;
-  --gossip-accent-soft: rgba(91, 140, 255, 0.14);
-  --gossip-accent-2: #ff7a59;
+  --gossip-accent: #ff1493;
+  --gossip-accent-soft: rgba(255, 20, 147, 0.12);
+  /* Funcional, fuera del sistema de 3 colores de marca — ver brand kit §06. */
+  --gossip-error: #dc2626;
 
   --gossip-radius-sm: 10px;
   --gossip-radius-md: 14px;
   --gossip-radius-lg: 20px;
   --gossip-radius-pill: 999px;
 
-  --gossip-shadow-glass: 0 8px 32px -8px rgba(0, 0, 0, 0.45);
+  --gossip-shadow-glass: 0 8px 24px -8px rgba(17, 17, 17, 0.12);
 
-  --gossip-font-display: "Sora", system-ui, sans-serif;
+  --gossip-font-display: "Inter", system-ui, sans-serif;
   --gossip-font-body: "Inter", system-ui, sans-serif;
 
   --gossip-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -40,31 +43,9 @@
   --gossip-motion-slow: 400ms;
 }
 
-[data-theme="light"] {
-  color-scheme: light;
-  --gossip-bg: #f7f7fa;
-  --gossip-surface: #ffffff;
-  --gossip-surface-2: #f0f0f4;
-  --gossip-border: #e2e2e8;
-
-  --gossip-glass-bg: rgba(255, 255, 255, 0.55);
-  --gossip-glass-border: rgba(20, 20, 30, 0.08);
-
-  --gossip-text: #14161b;
-  --gossip-text-muted: rgba(20, 22, 27, 0.62);
-
-  --gossip-accent: #3654e0;
-  --gossip-accent-soft: rgba(54, 84, 224, 0.1);
-  --gossip-accent-2: #d9562b;
-
-  --gossip-shadow-glass: 0 8px 32px -12px rgba(20, 20, 30, 0.18);
-}
-
 .gossip-glass {
   background: var(--gossip-glass-bg);
   border: 1px solid var(--gossip-glass-border);
-  backdrop-filter: blur(var(--gossip-glass-blur)) saturate(160%);
-  -webkit-backdrop-filter: blur(var(--gossip-glass-blur)) saturate(160%);
   box-shadow: var(--gossip-shadow-glass);
   border-radius: var(--gossip-radius-lg);
 }

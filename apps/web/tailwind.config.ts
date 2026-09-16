@@ -6,7 +6,6 @@ const config: Config = {
     "./components/**/*.{ts,tsx}",
     "../../packages/ui/src/**/*.{ts,tsx}",
   ],
-  darkMode: ["class", '[data-theme="dark"]'],
   theme: {
     extend: {
       colors: {
@@ -17,10 +16,11 @@ const config: Config = {
         text: "var(--gossip-text)",
         "text-muted": "var(--gossip-text-muted)",
         accent: "var(--gossip-accent)",
-        "accent-2": "var(--gossip-accent-2)",
+        "accent-soft": "var(--gossip-accent-soft)",
+        error: "var(--gossip-error)",
       },
       fontFamily: {
-        display: ["Sora", "system-ui", "sans-serif"],
+        display: ["Inter", "system-ui", "sans-serif"],
         body: ["Inter", "system-ui", "sans-serif"],
       },
       borderRadius: {

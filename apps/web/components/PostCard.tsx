@@ -112,9 +112,9 @@ export function PostCard({
         <button
           onClick={(e) => { e.stopPropagation(); toggleLike(); }}
           aria-label={liked ? "Quitar me gusta" : "Me gusta"}
-          className="flex items-center gap-1.5 text-text-muted hover:text-accent-2"
+          className="flex items-center gap-1.5 text-text-muted hover:text-accent"
         >
-          {liked ? <HeartFilledIcon size={20} className="text-accent-2" /> : <HeartIcon size={20} />}
+          {liked ? <HeartFilledIcon size={20} className="text-accent" /> : <HeartIcon size={20} />}
           <span className="text-[12.5px]">{likeCount}</span>
         </button>
         <span className="flex items-center gap-1.5 text-text-muted">

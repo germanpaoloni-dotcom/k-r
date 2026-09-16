@@ -21,7 +21,7 @@ export function Button({
   );
 }
 
-/** Superficie flotante en vidrio esmerilado — usar solo para nav, sheets y modales. */
+/** Superficie flotante (nav, sheets, modales) — elevada por sombra, sin blur ("premium sin 3D"). */
 export function GlassSurface({
   children,
   className = "",
