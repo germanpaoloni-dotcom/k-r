@@ -31,3 +31,7 @@ CREATE INDEX IF NOT EXISTS users_display_name_trgm_idx ON users USING GIN (displ
 CREATE INDEX IF NOT EXISTS locations_name_trgm_idx ON locations USING GIN (name gin_trgm_ops);
 CREATE INDEX IF NOT EXISTS posts_caption_trgm_idx ON posts USING GIN (caption gin_trgm_ops);
 CREATE INDEX IF NOT EXISTS decilo_body_trgm_idx ON decilo USING GIN (body gin_trgm_ops);
+
+-- Marketplace (Fase 6 — catálogo). Mismo patrón que el resto: ILIKE + similarity().
+CREATE INDEX IF NOT EXISTS businesses_name_trgm_idx ON businesses USING GIN (name gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS products_name_trgm_idx ON products USING GIN (name gin_trgm_ops);

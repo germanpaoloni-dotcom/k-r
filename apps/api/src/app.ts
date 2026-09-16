@@ -26,6 +26,7 @@ import { searchRoutes } from "./domains/search/routes.js";
 import { groupsRoutes } from "./domains/groups/routes.js";
 import { eventsRoutes } from "./domains/events/routes.js";
 import { playRoutes } from "./domains/play/routes.js";
+import { marketplaceRoutes } from "./domains/marketplace/routes.js";
 
 export async function buildApp() {
   const app = Fastify({
@@ -64,6 +65,7 @@ export async function buildApp() {
   await app.register(groupsRoutes, { prefix: "/api/v1" });
   await app.register(eventsRoutes, { prefix: "/api/v1" });
   await app.register(playRoutes, { prefix: "/api/v1" });
+  await app.register(marketplaceRoutes, { prefix: "/api/v1" });
 
   app.setErrorHandler((err: FastifyError, _req, reply) => {
     app.log.error(err);

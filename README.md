@@ -74,7 +74,7 @@ Mientras esta sesión de Claude no tenga permiso de push directo al repo, cada a
 
 Por defecto busca el `.bundle` más reciente en tu carpeta de Descargas, lo aplica sobre `~/kor` (o clona el repo ahí si todavía no existe), pushea a GitHub, y archiva el bundle ya usado en `Descargas/kor-bundles-aplicados`. Nunca pisa commits locales: si no puede aplicar en fast-forward, avisa y no toca nada.
 
-## Estado actual (Fase 5 — Kör Play: completa)
+## Estado actual (Fase 6 — Marketplace: catálogo en curso)
 
 Construido y probado de punta a punta según el roadmap de 8 fases de [`kor-arquitectura-v2.1.md`](../../claude/kor-arquitectura-v2.1.md) (Kör pasó de "app de descubrimiento" a red social masiva — ver también v2 y Fase 0 en el mismo lugar).
 
@@ -117,6 +117,12 @@ Construido y probado de punta a punta según el roadmap de 8 fases de [`kor-arqu
 - ✅ **Inventario**: `GET /inventory` — cosméticos y badges propios, hidratados en lote (mismo patrón `hydrateX` del resto del proyecto).
 - ✅ **Mascotas**: `POST /pets` (una por usuario) y ahora también `POST /groups/:id/pet` (una por grupo, cualquier miembro puede crearla/entrenarla) — la progresión de grupo que Fase 4 dejó pendiente. `POST /pets/:id/train`: +15 XP, sube de nivel cada 100 XP.
 - ⏳ Diferido a más adelante: Marketplace (Fase 6), Kör AI (Fase 7), Escala (Fase 8).
+
+**Fase 6 — Marketplace (en curso):**
+
+- ✅ **Negocios**: `businesses` pasa de tabla latente (desde Fase 0/1) a dominio completo — `POST /businesses` (dueño = owner automático), `GET /businesses` (browse con filtro por `category`/`city` vía el lugar asociado/`q` por nombre vía trigram), `GET /businesses/mine`, `GET /businesses/:id`, `PATCH /businesses/:id` (solo dueño). Sin gate por `accountType="business"` todavía — mismo criterio que `groups`/`events`: no existe sistema de roles, cualquier usuario autenticado puede crear un negocio del que es dueño.
+- ✅ **Catálogo de productos**: `products` (mismo caso, latente desde Fase 0/1) — `POST /businesses/:id/products` (solo dueño del negocio), `GET /businesses/:id/products` (catálogo del negocio), `GET /products` (browse general con `businessId`/`category`/`q`), `GET /products/:id`, `PATCH /products/:id` y `DELETE /products/:id` (solo dueño, vía join a `businesses.ownerUserId`).
+- ⏳ Deliberadamente afuera de este corte: checkout (`orders`/`payments`/`payouts`, ya en schema desde Fase 0) e integración con Mercado Pago Marketplace — se suman en la siguiente iteración de esta fase, cuando haya credenciales reales de MP para probar contra su sandbox.
 
 ## Decisiones de Fase 0 ya resueltas
 
