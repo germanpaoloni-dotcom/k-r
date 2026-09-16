@@ -417,3 +417,18 @@ export interface CreatorAnalytics {
 export function getCreatorAnalytics() {
   return authRequest<CreatorAnalytics>("/analytics/creator");
 }
+
+/* ---------------------------------------------------------------------- */
+/* Búsqueda                                                                  */
+/* ---------------------------------------------------------------------- */
+
+export interface SearchResults {
+  users: { id: string; username: string; display_name: string; avatar_url: string | null }[];
+  locations: { id: string; name: string; city: string; category: string | null }[];
+  posts: { id: string; caption: string | null; username: string; display_name: string }[];
+  decilo: { id: string; body: string; username: string; display_name: string }[];
+}
+
+export function search(q: string) {
+  return request<SearchResults>(`/search?q=${encodeURIComponent(q)}`);
+}

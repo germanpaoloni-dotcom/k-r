@@ -12,6 +12,7 @@ import {
 } from "../../../components/icons";
 import { PostCard } from "../../../components/PostCard";
 import { PetSummary } from "../../../components/pets/PetSummary";
+import { BottomNav } from "../../../components/BottomNav";
 import {
   getSession,
   getUser,
@@ -170,7 +171,7 @@ export default function ProfilePage() {
   const daysInKor = Math.max(1, Math.floor((Date.now() - new Date(user.createdAt).getTime()) / 86_400_000));
 
   return (
-    <main className="mx-auto min-h-screen max-w-lg pb-10">
+    <main className="mx-auto min-h-screen max-w-lg pb-28">
       <div className="flex items-center justify-between px-3.5 py-4">
         <button onClick={() => router.back()} aria-label="Volver">
           <ChevronLeftIcon size={21} />
@@ -285,6 +286,8 @@ export default function ProfilePage() {
           ))}
         </div>
       </div>
+
+      <BottomNav />
     </main>
   );
 }

@@ -8,6 +8,7 @@ import { ChevronLeftIcon, ShareIcon, MapPinIcon } from "../../components/icons";
 import { PostCard } from "../../components/PostCard";
 import { PetSummary } from "../../components/pets/PetSummary";
 import { PetPicker } from "../../components/pets/PetPicker";
+import { BottomNav } from "../../components/BottomNav";
 import {
   clearSession,
   getSession,
@@ -103,7 +104,7 @@ export default function MePage() {
   const daysInGossip = Math.max(1, Math.floor((Date.now() - new Date(user.createdAt).getTime()) / 86_400_000));
 
   return (
-    <main className="mx-auto min-h-screen max-w-lg pb-10">
+    <main className="mx-auto min-h-screen max-w-lg pb-28">
       <div className="flex items-center gap-3 px-3.5 py-4">
         <Link href="/home" aria-label="Volver al feed">
           <ChevronLeftIcon size={21} />
@@ -233,6 +234,8 @@ export default function MePage() {
           Cerrar sesión
         </button>
       </div>
+
+      <BottomNav />
     </main>
   );
 }

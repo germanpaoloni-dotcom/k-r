@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Avatar } from "@gossip/ui";
 import { ChevronLeftIcon } from "../../components/icons";
+import { BottomNav } from "../../components/BottomNav";
 import { getSession, getConversations, type ConversationDto } from "../../lib/api";
 
 export default function MessagesPage() {
@@ -24,7 +25,7 @@ export default function MessagesPage() {
   }, [router]);
 
   return (
-    <main className="mx-auto min-h-screen max-w-lg">
+    <main className="mx-auto min-h-screen max-w-lg pb-28">
       <div className="flex items-center gap-3 px-3.5 py-4">
         <Link href="/home" aria-label="Volver">
           <ChevronLeftIcon size={21} />
@@ -74,6 +75,8 @@ export default function MessagesPage() {
           );
         })}
       </div>
+
+      <BottomNav />
     </main>
   );
 }

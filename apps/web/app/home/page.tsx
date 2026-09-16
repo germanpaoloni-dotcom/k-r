@@ -1,25 +1,41 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useCallback, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Avatar } from "@gossip/ui";
-import { BellIcon, PlusIcon, MessageSquareIcon } from "../../components/icons";
+import { SlidersIcon, SearchIcon } from "../../components/icons";
 import { PostCard } from "../../components/PostCard";
+import { BottomNav } from "../../components/BottomNav";
 import { getSession, getFeed, me, type FeedTab, type PostDto, type UserPublic } from "../../lib/api";
 
-const TABS: { id: FeedTab; label: string }[] = [
+const SUB_TABS: { id: FeedTab; label: string }[] = [
   { id: "for-you", label: "Para vos" },
   { id: "following", label: "Siguiendo" },
   { id: "nearby", label: "Cerca" },
-  { id: "trending", label: "Tendencias" },
-  { id: "mi-gente", label: "Mi gente" },
 ];
 
+const DESTINATION_LABEL: Record<string, string> = {
+  "mi-gente": "Mi gente",
+  trending: "Susurros",
+};
+
 export default function HomePage() {
+  return (
+    <Suspense fallback={null}>
+      <HomeContent />
+    </Suspense>
+  );
+}
+
+function HomeContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const destinationTab = searchParams.get("tab"); // "mi-gente" | "trending" | null
+
   const [user, setUser] = useState<UserPublic | null>(null);
-  const [tab, setTab] = useState<FeedTab>("for-you");
+  const [subTab, setSubTab] = useState<FeedTab>("for-you");
+  const [showFilters, setShowFilters] = useState(false);
   const [posts, setPosts] = useState<PostDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [nearbyError, setNearbyError] = useState<string | null>(null);
@@ -34,6 +50,8 @@ export default function HomePage() {
       if (res.data) setUser(res.data);
     });
   }, [router]);
+
+  const activeTab: FeedTab = destinationTab === "mi-gente" || destinationTab === "trending" ? destinationTab : subTab;
 
   const loadFeed = useCallback(async (nextTab: FeedTab) => {
     setLoading(true);
@@ -67,22 +85,26 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    loadFeed(tab);
-  }, [tab, loadFeed]);
+    loadFeed(activeTab);
+  }, [activeTab, loadFeed]);
 
   return (
-    <main className="relative mx-auto min-h-screen max-w-lg pb-24">
-      <div className="flex items-center justify-between px-4 pb-2 pt-4">
+    <main className="relative mx-auto min-h-screen max-w-lg pb-28">
+      <div className="flex items-center justify-between px-4 pt-4">
         <span className="flex items-center gap-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo-symbol.png" alt="" width={24} height={24} />
-          <span className="font-display text-[17px] font-semibold tracking-tight">Gossip</span>
+          <img src="/logo-symbol.png" alt="" width={30} height={30} />
+          <span className="flex flex-col leading-none">
+            <span className="font-display text-[19px] font-semibold tracking-tight">Gossip</span>
+            <span className="text-[10px] text-text-muted">
+              Gossipeá <span className="text-accent">algo</span>
+            </span>
+          </span>
         </span>
-        <div className="flex items-center gap-3.5">
-          <Link href="/messages" aria-label="Mensajes">
-            <MessageSquareIcon size={22} className="text-text" />
-          </Link>
-          <BellIcon size={22} className="text-text" />
+        <div className="flex items-center gap-3">
+          <button onClick={() => setShowFilters((v) => !v)} aria-label="Filtros de feed">
+            <SlidersIcon size={21} className={showFilters ? "text-accent" : "text-text"} />
+          </button>
           {user && (
             <Link href="/me">
               <Avatar seed={user.username} src={user.avatarUrl} size={30} />
@@ -91,21 +113,35 @@ export default function HomePage() {
         </div>
       </div>
 
-      <div className="gossip-glass sticky top-2 z-10 mx-4 my-2.5 flex gap-0.5 overflow-x-auto rounded-full p-1 [scrollbar-width:none]">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            className={`flex-shrink-0 whitespace-nowrap rounded-full px-3.5 py-1.5 font-display text-[13.5px] font-medium ${
-              tab === t.id ? "bg-accent text-white" : "text-text-muted"
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <Link
+        href="/search"
+        className="mx-4 mt-3.5 flex items-center gap-2 rounded-full bg-surface px-3.5 py-2.5 text-text-muted"
+      >
+        <SearchIcon size={16} />
+        <span className="text-[13.5px]">Buscar</span>
+      </Link>
 
-      <div className="flex flex-col gap-3.5 px-3.5 pb-6">
+      {destinationTab && DESTINATION_LABEL[destinationTab] && (
+        <h1 className="px-4 pt-4 font-display text-[15px] font-semibold">{DESTINATION_LABEL[destinationTab]}</h1>
+      )}
+
+      {!destinationTab && showFilters && (
+        <div className="gossip-glass mx-4 mt-3.5 flex gap-0.5 rounded-full p-1">
+          {SUB_TABS.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => setSubTab(t.id)}
+              className={`flex-1 whitespace-nowrap rounded-full px-3.5 py-1.5 font-display text-[13px] font-medium ${
+                subTab === t.id ? "bg-accent text-white" : "text-text-muted"
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div className="mt-3.5 flex flex-col gap-3.5 px-3.5 pb-6">
         {loading && <p className="px-2 py-8 text-center text-[13.5px] text-text-muted">Cargando…</p>}
         {!loading && nearbyError && (
           <p className="px-2 py-8 text-center text-[13.5px] text-text-muted">{nearbyError}</p>
@@ -121,19 +157,13 @@ export default function HomePage() {
               key={post.id}
               post={post}
               onDismissed={
-                tab === "for-you" ? (id) => setPosts((prev) => prev.filter((p) => p.id !== id)) : undefined
+                activeTab === "for-you" ? (id) => setPosts((prev) => prev.filter((p) => p.id !== id)) : undefined
               }
             />
           ))}
       </div>
 
-      <Link
-        href="/create"
-        className="fixed bottom-6 right-4 flex h-[52px] w-[52px] items-center justify-center rounded-full bg-accent text-white shadow-lg"
-        aria-label="Crear post"
-      >
-        <PlusIcon size={22} />
-      </Link>
+      <BottomNav />
     </main>
   );
 }

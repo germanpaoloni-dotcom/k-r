@@ -154,3 +154,58 @@ export function XIcon(props: IconProps) {
     </svg>
   );
 }
+
+export function HomeIcon({ filled, ...props }: IconProps & { filled?: boolean }) {
+  if (filled) {
+    return (
+      <svg {...base(props)} fill="currentColor" stroke="none">
+        <path d="M12 2.6 2.4 10.8A1 1 0 0 0 2 11.6V20a2 2 0 0 0 2 2h4.5a1 1 0 0 0 1-1v-5.5a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1V21a1 1 0 0 0 1 1H20a2 2 0 0 0 2-2v-8.4a1 1 0 0 0-.4-.8Z" />
+      </svg>
+    );
+  }
+  return (
+    <svg {...base(props)}>
+      <path d="m3 11 9-8.5L21 11" />
+      <path d="M5 10v9a1 1 0 0 0 1 1h4.5a1 1 0 0 0 1-1v-4.5a1 1 0 0 1 1-1h1a1 1 0 0 1 1 1V19a1 1 0 0 0 1 1H18a1 1 0 0 0 1-1v-9" />
+    </svg>
+  );
+}
+
+export function UsersIcon(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <circle cx="9" cy="8" r="3.2" />
+      <path d="M3.5 20c0-3.3 2.5-6 5.5-6s5.5 2.7 5.5 6" />
+      <path d="M15.5 4.4a3.2 3.2 0 0 1 0 6.2" />
+      <path d="M17 14.3c2.2.6 3.5 2.8 3.5 5.7" />
+    </svg>
+  );
+}
+
+export function FlameIcon(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
+    </svg>
+  );
+}
+
+export function SlidersIcon(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h13M21 18h-2" />
+      <circle cx="15" cy="6" r="2" />
+      <circle cx="7" cy="12" r="2" />
+      <circle cx="17" cy="18" r="2" />
+    </svg>
+  );
+}
+
+export function SearchIcon(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <circle cx="11" cy="11" r="7" />
+      <path d="m21 21-4.3-4.3" />
+    </svg>
+  );
+}
