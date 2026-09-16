@@ -74,7 +74,7 @@ Mientras esta sesión de Claude no tenga permiso de push directo al repo, cada a
 
 Por defecto busca el `.bundle` más reciente en tu carpeta de Descargas, lo aplica sobre `~/kor` (o clona el repo ahí si todavía no existe), pushea a GitHub, y archiva el bundle ya usado en `Descargas/kor-bundles-aplicados`. Nunca pisa commits locales: si no puede aplicar en fast-forward, avisa y no toca nada.
 
-## Estado actual (Fase 6 — Marketplace: catálogo en curso)
+## Estado actual (Fase 6 — Marketplace: completa con pago mockeado)
 
 Construido y probado de punta a punta según el roadmap de 8 fases de [`kor-arquitectura-v2.1.md`](../../claude/kor-arquitectura-v2.1.md) (Kör pasó de "app de descubrimiento" a red social masiva — ver también v2 y Fase 0 en el mismo lugar).
 
@@ -122,7 +122,9 @@ Construido y probado de punta a punta según el roadmap de 8 fases de [`kor-arqu
 
 - ✅ **Negocios**: `businesses` pasa de tabla latente (desde Fase 0/1) a dominio completo — `POST /businesses` (dueño = owner automático), `GET /businesses` (browse con filtro por `category`/`city` vía el lugar asociado/`q` por nombre vía trigram), `GET /businesses/mine`, `GET /businesses/:id`, `PATCH /businesses/:id` (solo dueño). Sin gate por `accountType="business"` todavía — mismo criterio que `groups`/`events`: no existe sistema de roles, cualquier usuario autenticado puede crear un negocio del que es dueño.
 - ✅ **Catálogo de productos**: `products` (mismo caso, latente desde Fase 0/1) — `POST /businesses/:id/products` (solo dueño del negocio), `GET /businesses/:id/products` (catálogo del negocio), `GET /products` (browse general con `businessId`/`category`/`q`), `GET /products/:id`, `PATCH /products/:id` y `DELETE /products/:id` (solo dueño, vía join a `businesses.ownerUserId`).
-- ⏳ Deliberadamente afuera de este corte: checkout (`orders`/`payments`/`payouts`, ya en schema desde Fase 0) e integración con Mercado Pago Marketplace — se suman en la siguiente iteración de esta fase, cuando haya credenciales reales de MP para probar contra su sandbox.
+- ✅ **Checkout**: `POST /orders` (valida stock, reserva descontando `products.stock`, calcula comisión 8% sobre subtotal), `GET /orders/mine`, `GET /orders/:id`, `POST /orders/:id/cancel` (restaura stock), `POST /orders/:id/fulfill` (dueño del negocio), `GET /businesses/:id/orders` y `GET /businesses/:id/payouts` (dueño). Comisión se descuenta del payout al negocio, nunca se le suma al comprador.
+- ✅ **Proveedor de pago agnóstico**: `payment-provider.ts` define la interfaz (`createPayment`); `MockPaymentProvider` es la única implementación hoy — simula un checkout hosteado y se resuelve a mano vía `POST /payments/mock-checkout/:orderId/resolve` (hace de webhook). El día que haya credenciales de sandbox de Mercado Pago, se suma `MercadoPagoProvider` sin tocar `orders.service.ts`.
+- ⏳ Todavía sin UI en el web (como el resto de las fases post-Fase 1) ni conector real de Mercado Pago Marketplace.
 
 ## Decisiones de Fase 0 ya resueltas
 

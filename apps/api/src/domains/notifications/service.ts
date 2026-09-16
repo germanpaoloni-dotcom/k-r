@@ -17,7 +17,10 @@ export type NotificationType =
   // por ahora; una preferencia dedicada es una extensión natural, no de
   // esta fase.
   | "event_attendance"
-  | "group_join";
+  | "group_join"
+  // Fase 6 (Marketplace) — mismo criterio: sin preferencia propia todavía.
+  | "order_placed"
+  | "order_paid";
 
 const PREFERENCE_BY_TYPE: Record<NotificationType, keyof typeof defaultPreferences | null> = {
   follow: "follows",
@@ -30,6 +33,8 @@ const PREFERENCE_BY_TYPE: Record<NotificationType, keyof typeof defaultPreferenc
   message: "messages",
   event_attendance: null,
   group_join: null,
+  order_placed: null,
+  order_paid: null,
 };
 
 const defaultPreferences = {
