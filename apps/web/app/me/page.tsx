@@ -4,12 +4,26 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeftIcon } from "../../components/icons";
-import { clearSession, getSession, me, type UserPublic } from "../../lib/api";
+import { PetSummary } from "../../components/pets/PetSummary";
+import { PetPicker } from "../../components/pets/PetPicker";
+import {
+  clearSession,
+  getSession,
+  me,
+  getMyPet,
+  getPetDefinitions,
+  type UserPublic,
+  type PetDto,
+  type PetDefinitionDto,
+} from "../../lib/api";
 
 export default function MePage() {
   const router = useRouter();
   const [user, setUser] = useState<UserPublic | null>(null);
   const [loading, setLoading] = useState(true);
+  const [pet, setPet] = useState<PetDto | null>(null);
+  const [petDefinitions, setPetDefinitions] = useState<PetDefinitionDto[]>([]);
+  const [petLoading, setPetLoading] = useState(true);
 
   useEffect(() => {
     const session = getSession();
@@ -25,6 +39,11 @@ export default function MePage() {
         return;
       }
       setUser(res.data);
+    });
+    getMyPet().then((res) => {
+      setPet(res.data ?? null);
+      setPetLoading(false);
+      if (!res.data) getPetDefinitions().then((r) => setPetDefinitions(r.data ?? []));
     });
   }, [router]);
 
@@ -53,12 +72,27 @@ export default function MePage() {
         </p>
       </div>
 
+      <div className="mt-5">
+        <h2 className="mb-2.5 font-display text-[11.5px] font-semibold uppercase tracking-[0.08em] text-text-muted">
+          Tu mascota
+        </h2>
+        {!petLoading && pet && <PetSummary pet={pet} />}
+        {!petLoading && !pet && petDefinitions.length > 0 && (
+          <>
+            <p className="mb-3 text-[12.5px] text-text-muted">
+              Elegí una mascota del catálogo — vive en Kör, no dentro de tu perfil.
+            </p>
+            <PetPicker definitions={petDefinitions} onAdopted={setPet} />
+          </>
+        )}
+      </div>
+
       <button
         onClick={() => {
           clearSession();
           router.push("/");
         }}
-        className="mt-5 text-[13px] text-text-muted hover:text-text"
+        className="mt-6 text-[13px] text-text-muted hover:text-text"
       >
         Cerrar sesión
       </button>

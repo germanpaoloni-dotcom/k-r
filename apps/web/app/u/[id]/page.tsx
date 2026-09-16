@@ -1,22 +1,45 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Avatar } from "@kor/ui";
-import { ChevronLeftIcon, MessageSquareIcon, MoreHorizontalIcon } from "../../../components/icons";
+import {
+  ChevronLeftIcon,
+  MoreHorizontalIcon,
+  ShareIcon,
+  MapPinIcon,
+} from "../../../components/icons";
 import { PostCard } from "../../../components/PostCard";
+import { PetSummary } from "../../../components/pets/PetSummary";
 import {
   getSession,
   getUser,
   getUserPosts,
-  getFollowers,
-  getFollowing,
+  getMutualFollowees,
+  getActivityState,
+  getUserPet,
   followUser,
   unfollowUser,
+  getFollowers,
+  requestFriendship,
+  getFriends,
+  getFriendRequests,
   me,
   type UserPublic,
   type PostDto,
+  type FollowUser,
+  type PetDto,
 } from "../../../lib/api";
+
+type FriendStatus = "none" | "pending" | "friends";
+
+const ACTIVITY_LABEL: Record<string, string> = {
+  pulsando: "Muy activo ahora",
+  creciendo: "Activo ahora",
+  activo: "Activo hoy",
+  desvaneciendo: "Activo hace poco",
+  silencioso: "Sin actividad reciente",
+};
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -25,10 +48,13 @@ export default function ProfilePage() {
 
   const [user, setUser] = useState<UserPublic | null>(null);
   const [posts, setPosts] = useState<PostDto[]>([]);
-  const [followerCount, setFollowerCount] = useState(0);
-  const [followingCount, setFollowingCount] = useState(0);
-  const [isFollowing, setIsFollowing] = useState(false);
+  const [mutuals, setMutuals] = useState<FollowUser[]>([]);
+  const [activityState, setActivityState] = useState<string | null>(null);
+  const [pet, setPet] = useState<PetDto | null>(null);
+  const [isOrbiting, setIsOrbiting] = useState(false); // "sumar a tu órbita" = follow
+  const [friendStatus, setFriendStatus] = useState<FriendStatus>("none");
   const [loading, setLoading] = useState(true);
+  const [shared, setShared] = useState(false);
 
   useEffect(() => {
     const session = getSession();
@@ -39,13 +65,18 @@ export default function ProfilePage() {
 
     let cancelled = false;
     async function load() {
-      const [ownRes, userRes, postsRes, followersRes, followingRes] = await Promise.all([
-        me(session!.accessToken),
-        getUser(userId),
-        getUserPosts(userId),
-        getFollowers(userId),
-        getFollowing(userId),
-      ]);
+      const [ownRes, userRes, postsRes, followersRes, mutualRes, activityRes, petRes, friendsRes, requestsRes] =
+        await Promise.all([
+          me(session!.accessToken),
+          getUser(userId),
+          getUserPosts(userId),
+          getFollowers(userId),
+          getMutualFollowees(userId),
+          getActivityState(userId),
+          getUserPet(userId),
+          getFriends(),
+          getFriendRequests(),
+        ]);
       if (cancelled) return;
 
       if (ownRes.data?.id === userId) {
@@ -56,11 +87,22 @@ export default function ProfilePage() {
         setLoading(false);
         return;
       }
+
       setUser(userRes.data);
       setPosts(postsRes.data ?? []);
-      setFollowerCount(followersRes.data?.length ?? 0);
-      setFollowingCount(followingRes.data?.length ?? 0);
-      setIsFollowing(Boolean(followersRes.data?.some((f) => f.id === ownRes.data?.id)));
+      setMutuals(mutualRes.data ?? []);
+      setActivityState(activityRes.data?.state ?? null);
+      setPet(petRes.data ?? null);
+      setIsOrbiting(Boolean(followersRes.data?.some((f) => f.id === ownRes.data?.id)));
+
+      const friends = friendsRes.data ?? [];
+      const outgoing = requestsRes.data?.outgoing ?? [];
+      const incoming = requestsRes.data?.incoming ?? [];
+      if (friends.some((f) => f.id === userId)) setFriendStatus("friends");
+      else if (outgoing.some((r) => r.addressee.id === userId) || incoming.some((r) => r.requester.id === userId)) {
+        setFriendStatus("pending");
+      }
+
       setLoading(false);
     }
     load();
@@ -69,11 +111,46 @@ export default function ProfilePage() {
     };
   }, [userId, router]);
 
-  async function toggleFollow() {
-    const next = !isFollowing;
-    setIsFollowing(next);
-    setFollowerCount((c) => c + (next ? 1 : -1));
+  const featuredPost = useMemo(() => {
+    if (posts.length === 0) return null;
+    return [...posts].sort((a, b) => b.likeCount - a.likeCount)[0]!;
+  }, [posts]);
+
+  const recentPosts = useMemo(() => posts.filter((p) => p.id !== featuredPost?.id), [posts, featuredPost]);
+
+  const topPlaces = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const p of posts) {
+      if (p.location) counts.set(p.location.name, (counts.get(p.location.name) ?? 0) + 1);
+    }
+    return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 4).map(([name]) => name);
+  }, [posts]);
+
+  async function toggleOrbit() {
+    const next = !isOrbiting;
+    setIsOrbiting(next);
     await (next ? followUser(userId) : unfollowUser(userId));
+  }
+
+  async function addToMyPeople() {
+    if (friendStatus !== "none") return;
+    setFriendStatus("pending");
+    await requestFriendship(userId);
+  }
+
+  async function shareProfile() {
+    const url = window.location.href;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: user?.displayName, url });
+        return;
+      } catch {
+        // el usuario canceló el share nativo — cae al copiado
+      }
+    }
+    await navigator.clipboard.writeText(url);
+    setShared(true);
+    setTimeout(() => setShared(false), 2000);
   }
 
   if (loading) {
@@ -83,69 +160,116 @@ export default function ProfilePage() {
     return <main className="flex min-h-screen items-center justify-center text-text-muted">No encontrado.</main>;
   }
 
+  const daysInKor = Math.max(1, Math.floor((Date.now() - new Date(user.createdAt).getTime()) / 86_400_000));
+
   return (
-    <main className="mx-auto min-h-screen max-w-lg">
+    <main className="mx-auto min-h-screen max-w-lg pb-10">
       <div className="flex items-center justify-between px-3.5 py-4">
         <button onClick={() => router.back()} aria-label="Volver">
           <ChevronLeftIcon size={21} />
         </button>
-        <span className="font-display text-[14.5px] font-semibold">{user.username}</span>
         <MoreHorizontalIcon size={20} className="text-text" />
       </div>
 
-      {/* Identidad a la izquierda, acciones compactas a la derecha de la misma
-          fila — no hero centrado con stats en columnas (evita el patrón de
-          perfil de Instagram). */}
-      <div className="px-5 pb-2 pt-1">
-        <div className="flex items-start gap-3.5">
-          <Avatar seed={user.username} src={user.avatarUrl} size={64} />
-          <div className="min-w-0 flex-1 pt-0.5">
-            <div className="font-display text-[17px] font-semibold">{user.displayName}</div>
-            <div className="mt-0.5 text-[12.5px] text-text-muted">@{user.username}</div>
-          </div>
-          <div className="flex flex-shrink-0 flex-col gap-1.5">
-            <button
-              onClick={toggleFollow}
-              className={`rounded-full px-4 py-1.5 text-[12.5px] font-semibold ${
-                isFollowing ? "border border-border text-text-muted" : "bg-accent text-white"
-              }`}
-            >
-              {isFollowing ? "Siguiendo" : "Seguir"}
-            </button>
-            <button className="flex items-center justify-center gap-1.5 rounded-full border border-border px-4 py-1.5 text-[12.5px] font-medium text-text-muted">
-              <MessageSquareIcon size={14} />
-              Mensaje
-            </button>
-          </div>
+      {/* Identidad */}
+      <div className="flex flex-col items-center px-5 text-center">
+        <Avatar seed={user.username} src={user.avatarUrl} size={80} />
+        <div className="mt-3 flex items-center gap-2">
+          <h1 className="font-display text-[19px] font-semibold">{user.displayName}</h1>
+          {activityState && activityState !== "silencioso" && (
+            <span className="h-2 w-2 rounded-full bg-accent" aria-hidden />
+          )}
         </div>
-
-        {user.bio && <p className="mt-3.5 text-[13.5px] leading-relaxed text-text">{user.bio}</p>}
-
-        <div className="mt-2.5 text-[12px] leading-relaxed text-text-muted">
-          <span className="font-semibold text-text">{posts.length}</span> publicaciones ·{" "}
-          <span className="font-semibold text-text">{followerCount}</span> seguidores ·{" "}
-          <span className="font-semibold text-text">{followingCount}</span> siguiendo
-          <br />
-          Cuenta {user.accountType} · en Kōr desde{" "}
-          {new Date(user.createdAt).toLocaleDateString("es-AR", { month: "long", year: "numeric" })}
-        </div>
+        <span className="text-[13px] text-text-muted">@{user.username}</span>
+        {activityState && (
+          <span className="mt-1.5 text-[11.5px] text-text-muted">{ACTIVITY_LABEL[activityState] ?? activityState}</span>
+        )}
+        {user.bio && <p className="mt-3 max-w-xs text-[13.5px] leading-relaxed text-text">“{user.bio}”</p>}
       </div>
 
-      <div className="mt-3 border-t border-border px-5 pb-1 pt-3.5">
-        <span className="font-display text-[11.5px] font-semibold uppercase tracking-[0.08em] text-text-muted">
-          Publicaciones
+      {/* Contexto social — sin followers/following como protagonista */}
+      <div className="mt-4 flex items-center justify-center gap-5 text-[12px] text-text-muted">
+        <span>
+          <strong className="text-text">{mutuals.length}</strong> en común
+        </span>
+        <span>
+          <strong className="text-text">{daysInKor}</strong> día{daysInKor === 1 ? "" : "s"} en Kör
         </span>
       </div>
 
-      {/* Lista vertical de cards, no grid cuadrado de fotos: no todos los
-          posts de Kōr son imagen, y esto reusa el mismo componente del feed. */}
-      <div className="flex flex-col gap-3 px-3.5 pb-8 pt-1">
-        {posts.length === 0 && (
+      {/* Acciones — nunca "Seguir"/"Mensaje" como CTA principal */}
+      <div className="mt-5 flex items-center gap-2 px-5">
+        <button
+          onClick={addToMyPeople}
+          disabled={friendStatus !== "none"}
+          className="flex-1 rounded-md bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-white disabled:opacity-60"
+        >
+          {friendStatus === "friends" ? "En tu gente" : friendStatus === "pending" ? "Pedido enviado" : "Sumar a Mi gente"}
+        </button>
+        <button
+          onClick={toggleOrbit}
+          className={`flex-1 rounded-md px-4 py-2.5 text-[13.5px] font-semibold ${
+            isOrbiting ? "border border-border text-text-muted" : "bg-accent-soft text-accent"
+          }`}
+        >
+          {isOrbiting ? "En tu órbita" : "Sumar a tu órbita"}
+        </button>
+        <button
+          onClick={shareProfile}
+          aria-label="Compartir perfil"
+          className="flex h-[42px] w-[42px] flex-shrink-0 items-center justify-center rounded-md border border-border text-text-muted"
+        >
+          <ShareIcon size={17} />
+        </button>
+      </div>
+      {shared && <p className="mt-2 text-center text-[12px] text-accent">Link copiado</p>}
+
+      {pet && (
+        <div className="mt-6 px-5">
+          <h2 className="mb-2.5 font-display text-[11.5px] font-semibold uppercase tracking-[0.08em] text-text-muted">
+            Mascota
+          </h2>
+          <PetSummary pet={pet} />
+        </div>
+      )}
+
+      {topPlaces.length > 0 && (
+        <div className="mt-6 px-5">
+          <h2 className="mb-2.5 font-display text-[11.5px] font-semibold uppercase tracking-[0.08em] text-text-muted">
+            Lo que más vibra en su mundo
+          </h2>
+          <div className="flex flex-wrap gap-1.5">
+            {topPlaces.map((name) => (
+              <span key={name} className="flex items-center gap-1 rounded-full border border-border px-3 py-1 text-[12px] text-text-muted">
+                <MapPinIcon size={11} />
+                {name}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {featuredPost && (
+        <div className="mt-6 px-3.5">
+          <h2 className="mb-2.5 px-1.5 font-display text-[11.5px] font-semibold uppercase tracking-[0.08em] text-text-muted">
+            Momento destacado
+          </h2>
+          <PostCard post={featuredPost} variant="compact" />
+        </div>
+      )}
+
+      <div className="mt-6 px-3.5">
+        <h2 className="mb-2.5 px-1.5 font-display text-[11.5px] font-semibold uppercase tracking-[0.08em] text-text-muted">
+          Últimos momentos
+        </h2>
+        {recentPosts.length === 0 && !featuredPost && (
           <p className="px-2 py-8 text-center text-[13.5px] text-text-muted">Todavía no publicó nada.</p>
         )}
-        {posts.map((post) => (
-          <PostCard key={post.id} post={post} variant="compact" />
-        ))}
+        <div className="flex flex-col gap-3">
+          {recentPosts.map((post) => (
+            <PostCard key={post.id} post={post} variant="compact" />
+          ))}
+        </div>
       </div>
     </main>
   );

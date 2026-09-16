@@ -261,3 +261,34 @@ async function computeOrbs(viewerId: string): Promise<Orb[]> {
 export async function getOrbsForViewer(viewerId: string): Promise<Orb[]> {
   return getOrCompute(`orbs:${viewerId}`, CACHE_TTL_SECONDS, () => computeOrbs(viewerId));
 }
+
+/**
+ * Estado de actividad público de UNA persona (perfil ajeno) — a propósito
+ * NO es "sus Orbes": ese concepto se computa desde la red social del
+ * *viewer* (ver `computeOrbs`), mostrárselo a un visitante cualquiera
+ * infiere amigos/lugares/eventos privados del dueño del perfil, algo que
+ * la propia spec de perfil ajeno prohíbe. Esto es solo su propia actividad
+ * pública (posts/Mirá esto/comments), el mismo dato que ya es visible en
+ * su perfil — un único estado, no una lista de Orbes.
+ */
+export async function getPublicActivityState(userId: string): Promise<OrbState> {
+  return getOrCompute(`activity-state:${userId}`, CACHE_TTL_SECONDS, async () => {
+    const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const [postRows, miraRows, commentRows] = await Promise.all([
+      db
+        .select({ at: posts.createdAt })
+        .from(posts)
+        .where(and(eq(posts.userId, userId), eq(posts.visibility, "public"), gte(posts.createdAt, since24h))),
+      db
+        .select({ at: miraEsto.createdAt })
+        .from(miraEsto)
+        .where(and(eq(miraEsto.userId, userId), gte(miraEsto.createdAt, since24h))),
+      db
+        .select({ at: comments.createdAt })
+        .from(comments)
+        .where(and(eq(comments.userId, userId), gte(comments.createdAt, since24h))),
+    ]);
+    const signals = [...postRows, ...miraRows, ...commentRows].map((r) => ({ sourceId: userId, at: r.at }));
+    return classify(signals, Date.now()).state;
+  });
+}

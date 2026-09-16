@@ -24,6 +24,8 @@ import {
   createGroupPet,
   getGroupPet,
   trainPet,
+  listPetDefinitions,
+  adoptPet,
 } from "./service.js";
 
 const createGameSchema = z.object({
@@ -53,6 +55,10 @@ const createBadgeSchema = z.object({
 const createPetSchema = z.object({
   species: z.string().min(1).max(40),
   name: z.string().min(1).max(40),
+});
+
+const adoptPetSchema = z.object({
+  definitionId: z.string().uuid(),
 });
 
 function handleError(err: unknown, reply: FastifyReply) {
@@ -215,6 +221,23 @@ export async function playRoutes(app: FastifyInstance) {
   });
 
   // ------------------------------------------------------------- mascotas
+  app.get("/pet-definitions", async (_req, reply) => {
+    const list = await listPetDefinitions();
+    return reply.send({ data: list, error: null });
+  });
+
+  app.post("/pets/adopt", { preHandler: app.authenticate }, async (req, reply) => {
+    const parsed = adoptPetSchema.safeParse(req.body);
+    if (!parsed.success) return reply.status(400).send({ data: null, error: parsed.error.flatten() });
+    const { sub } = req.user as { sub: string };
+    try {
+      const pet = await adoptPet(sub, parsed.data.definitionId);
+      return reply.status(201).send({ data: pet, error: null });
+    } catch (err) {
+      return handleError(err, reply);
+    }
+  });
+
   app.post("/pets", { preHandler: app.authenticate }, async (req, reply) => {
     const parsed = createPetSchema.safeParse(req.body);
     if (!parsed.success) return reply.status(400).send({ data: null, error: parsed.error.flatten() });

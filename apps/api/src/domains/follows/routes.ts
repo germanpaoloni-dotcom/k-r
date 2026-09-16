@@ -1,6 +1,14 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { follow, unfollow, setFavorite, listFollowers, listFollowing, FollowError } from "./service.js";
+import {
+  follow,
+  unfollow,
+  setFavorite,
+  listFollowers,
+  listFollowing,
+  mutualFollowees,
+  FollowError,
+} from "./service.js";
 
 export async function followRoutes(app: FastifyInstance) {
   app.post("/users/:id/follow", { preHandler: app.authenticate }, async (req, reply) => {
@@ -44,6 +52,14 @@ export async function followRoutes(app: FastifyInstance) {
   app.get("/users/:id/following", async (req, reply) => {
     const { id } = req.params as { id: string };
     const rows = await listFollowing(id);
+    return reply.send({ data: rows, error: null });
+  });
+
+  // "Gente en común" del perfil ajeno — necesita viewer, por eso auth.
+  app.get("/users/:id/mutual", { preHandler: app.authenticate }, async (req, reply) => {
+    const { id } = req.params as { id: string };
+    const { sub } = req.user as { sub: string };
+    const rows = await mutualFollowees(sub, id);
     return reply.send({ data: rows, error: null });
   });
 }

@@ -238,3 +238,77 @@ export interface LocationDto {
 export function searchLocations(q: string) {
   return request<LocationDto[]>(`/locations?q=${encodeURIComponent(q)}&limit=8`);
 }
+
+/* ---------------------------------------------------------------------- */
+/* Mi gente (amistad — distinto de follow)                                  */
+/* ---------------------------------------------------------------------- */
+
+export function getFriends() {
+  return authRequest<FollowUser[]>("/friendships");
+}
+
+export function getFriendRequests() {
+  return authRequest<{ incoming: { id: string; requester: FollowUser }[]; outgoing: { id: string; addressee: FollowUser }[] }>(
+    "/friendships/requests"
+  );
+}
+
+export function requestFriendship(userId: string) {
+  return authRequest<null>(`/friendships/${userId}/request`, { method: "POST", body: "{}" });
+}
+
+/* ---------------------------------------------------------------------- */
+/* Perfil ajeno — gente en común, estado de actividad                       */
+/* ---------------------------------------------------------------------- */
+
+export function getMutualFollowees(userId: string) {
+  return authRequest<FollowUser[]>(`/users/${userId}/mutual`);
+}
+
+export function getActivityState(userId: string) {
+  return request<{ state: string }>(`/users/${userId}/activity-state`);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Kör Pets                                                                  */
+/* ---------------------------------------------------------------------- */
+
+export interface PetDefinitionDto {
+  id: string;
+  key: string;
+  name: string;
+  species: string;
+  personality: string;
+  description: string | null;
+  interaction: string;
+  rarity: string;
+}
+
+export interface PetDto {
+  id: string;
+  ownerType: string;
+  ownerId: string;
+  species: string;
+  name: string;
+  definitionId: string | null;
+  level: number;
+  xp: number;
+  createdAt: string;
+  definition: PetDefinitionDto | null;
+}
+
+export function getPetDefinitions() {
+  return request<PetDefinitionDto[]>("/pet-definitions");
+}
+
+export function getMyPet() {
+  return authRequest<PetDto | null>("/pets/mine");
+}
+
+export function getUserPet(userId: string) {
+  return request<PetDto | null>(`/users/${userId}/pet`);
+}
+
+export function adoptPet(definitionId: string) {
+  return authRequest<PetDto>("/pets/adopt", { method: "POST", body: JSON.stringify({ definitionId }) });
+}

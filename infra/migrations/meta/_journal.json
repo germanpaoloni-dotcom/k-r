@@ -43,6 +43,13 @@
       "when": 1789562171198,
       "tag": "0005_oval_amazoness",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1789568041610,
+      "tag": "0006_high_steve_rogers",
+      "breakpoints": true
     }
   ]
 }

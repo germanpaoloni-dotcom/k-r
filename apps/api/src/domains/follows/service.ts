@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { db } from "../../db/index.js";
 import { follows, users } from "../../db/schema.js";
 import { isBlockedEitherWay } from "../blocks/service.js";
@@ -66,4 +66,18 @@ export async function listFollowing(userId: string) {
     .from(follows)
     .innerJoin(users, eq(users.id, follows.followeeId))
     .where(eq(follows.followerId, userId));
+}
+
+/**
+ * "Gente en común" del perfil ajeno — gente que tanto `viewerId` como
+ * `otherId` siguen. Solo cuenta follows (dato público de ambos lados), no
+ * friendships ni ubicación/actividad — evita inferir relaciones privadas.
+ */
+export async function mutualFollowees(viewerId: string, otherId: string) {
+  const [mine, theirs] = await Promise.all([followeeIds(viewerId), followeeIds(otherId)]);
+  const theirSet = new Set(theirs);
+  const mutualIds = mine.filter((id) => theirSet.has(id));
+  if (mutualIds.length === 0) return [];
+
+  return db.select(publicUserFields).from(users).where(inArray(users.id, mutualIds));
 }

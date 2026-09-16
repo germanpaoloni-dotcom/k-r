@@ -4,6 +4,7 @@ import { db } from "../../db/index.js";
 import { users } from "../../db/schema.js";
 import { getUserById } from "../auth/service.js";
 import { listUserPosts } from "../social/service.js";
+import { getUserPet } from "../play/service.js";
 
 export async function usersRoutes(app: FastifyInstance) {
   app.get("/users/me", { preHandler: app.authenticate }, async (req, reply) => {
@@ -46,5 +47,11 @@ export async function usersRoutes(app: FastifyInstance) {
     const viewer = req.user as { sub: string } | undefined;
     const list = await listUserPosts(id, viewer?.sub);
     return reply.send({ data: list, error: null });
+  });
+
+  app.get("/users/:id/pet", async (req, reply) => {
+    const { id } = req.params as { id: string };
+    const pet = await getUserPet(id);
+    return reply.send({ data: pet, error: null });
   });
 }

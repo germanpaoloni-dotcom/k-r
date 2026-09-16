@@ -83,6 +83,10 @@ export const moderationStatusEnum = pgEnum("moderation_status", [
 export const groupVisibilityEnum = pgEnum("group_visibility", ["public", "private"]);
 export const groupRoleEnum = pgEnum("group_role", ["owner", "member"]);
 
+// --- Nuevos enums Kör Pets (paquete "Perfil + Pets") ----------------------
+
+export const petRarityEnum = pgEnum("pet_rarity", ["common", "rare", "epic", "legendary"]);
+
 // --- Nuevos enums Fase 8 (Escala) ----------------------------------------
 
 export const promotionStatusEnum = pgEnum("promotion_status", [
@@ -833,12 +837,37 @@ export const badges = pgTable("badges", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+/**
+ * Catálogo curado de Kör Pets — 25 mascotas fijas (paquete "Perfil + Pets",
+ * adaptado a la arquitectura real). A diferencia de `pets` (Fase 5, Kör
+ * Play), acá `species`/`name`/`personality` NO los elige el usuario: son
+ * fijos por `key`. Sin endpoint de alta pública todavía (mismo criterio que
+ * `games`/`badges` — no hay sistema de roles admin); el catálogo se siembra
+ * una vez en post-migrate.sql.
+ */
+export const petDefinitions = pgTable("pet_definitions", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  key: varchar("key", { length: 40 }).notNull().unique(),
+  name: varchar("name", { length: 40 }).notNull(),
+  species: varchar("species", { length: 20 }).notNull(), // dog | cat | dragon | rabbit | bird
+  personality: varchar("personality", { length: 80 }).notNull(),
+  description: text("description"),
+  // Travesura principal (steal_profile, poop_feed, scratch_orbs, ...) — el
+  // motor de comportamiento vive en el cliente (web), esto es solo el catálogo.
+  interaction: varchar("interaction", { length: 30 }).notNull(),
+  rarity: petRarityEnum("rarity").notNull().default("common"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const pets = pgTable("pets", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   ownerType: varchar("owner_type", { length: 10 }).notNull(), // user | group (grupo, dominio Play sigue siendo Fase 5)
   ownerId: uuid("owner_id").notNull(),
   species: varchar("species", { length: 40 }).notNull(),
   name: varchar("name", { length: 40 }).notNull(),
+  // Solo se completa cuando el pet viene del catálogo curado (adoptPet) — los
+  // pets de grupo (Fase 5) y cualquier pet libre anterior quedan en null.
+  definitionId: uuid("definition_id").references(() => petDefinitions.id),
   level: integer("level").notNull().default(1),
   xp: integer("xp").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

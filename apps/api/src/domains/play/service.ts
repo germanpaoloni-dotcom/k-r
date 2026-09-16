@@ -8,6 +8,7 @@ import {
   orbCosmetics,
   badges,
   pets,
+  petDefinitions,
   inventory,
   groups,
   groupMembers,
@@ -398,12 +399,54 @@ export async function createUserPet(userId: string, input: { species: string; na
   );
 }
 
+/** Catálogo curado de Kör Pets — 25 mascotas fijas, sembradas en post-migrate.sql. */
+export async function listPetDefinitions() {
+  return db.select().from(petDefinitions).orderBy(petDefinitions.species, petDefinitions.name);
+}
+
+/**
+ * Adoptar una mascota del catálogo curado — a diferencia de `createUserPet`
+ * (nombre/especie libres, sigue existiendo para no romper nada), acá
+ * `species`/`name` los fija el catálogo. Misma regla de "una por usuario".
+ */
+export async function adoptPet(userId: string, definitionId: string) {
+  const [existing] = await db
+    .select()
+    .from(pets)
+    .where(and(eq(pets.ownerType, "user"), eq(pets.ownerId, userId)));
+  if (existing) throw new PlayError(400, "Ya tenés una mascota.");
+
+  const [definition] = await db.select().from(petDefinitions).where(eq(petDefinitions.id, definitionId));
+  if (!definition) throw new PlayError(404, "Esa mascota no existe en el catálogo.");
+
+  const pet = firstOrThrow(
+    await db
+      .insert(pets)
+      .values({
+        ownerType: "user",
+        ownerId: userId,
+        species: definition.species,
+        name: definition.name,
+        definitionId: definition.id,
+      })
+      .returning()
+  );
+  return { ...pet, definition };
+}
+
+async function hydratePetDefinition(pet: typeof pets.$inferSelect) {
+  if (!pet.definitionId) return { ...pet, definition: null };
+  const [definition] = await db.select().from(petDefinitions).where(eq(petDefinitions.id, pet.definitionId));
+  return { ...pet, definition: definition ?? null };
+}
+
+/** Mascota de un usuario, pública — perfil propio (`/pets/mine`) o ajeno (`/users/:id/pet`). */
 export async function getUserPet(userId: string) {
   const [pet] = await db
     .select()
     .from(pets)
     .where(and(eq(pets.ownerType, "user"), eq(pets.ownerId, userId)));
-  return pet ?? null;
+  return pet ? hydratePetDefinition(pet) : null;
 }
 
 export async function createGroupPet(groupId: string, userId: string, input: { species: string; name: string }) {
