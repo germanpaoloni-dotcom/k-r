@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import { registerInputSchema, loginInputSchema } from "@kor/types";
+import { registerInputSchema, loginInputSchema } from "@gossip/types";
 import { register, login, refresh, logout, AuthError } from "./service.js";
 
 // Límite más estricto que el global (100/min en app.ts) — login/register son

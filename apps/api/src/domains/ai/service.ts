@@ -1,4 +1,4 @@
-import { createAiProvider } from "@kor/ai-gateway";
+import { createAiProvider } from "@gossip/ai-gateway";
 import { listLocations, nearbyLocations } from "../locations/service.js";
 import { listEvents } from "../events/service.js";
 import { detectQueHagoIntent } from "./heuristics.js";

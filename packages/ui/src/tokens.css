@@ -1,5 +1,5 @@
 /**
- * Kōr Design System — Liquid Glass
+ * Gossip Design System — Liquid Glass
  * Tokens compartidos entre apps/web y (más adelante) apps/mobile.
  * El vidrio se usa solo en superficies flotantes (nav, sheets, modales).
  * El contenido de fondo (feed, texto largo, formularios) usa --surface sólido.
@@ -8,63 +8,63 @@
 :root {
   color-scheme: dark light;
 
-  --kor-bg: #0b0e14;
-  --kor-surface: #12151c;
-  --kor-surface-2: #181c25;
-  --kor-border: #242732;
+  --gossip-bg: #0b0e14;
+  --gossip-surface: #12151c;
+  --gossip-surface-2: #181c25;
+  --gossip-border: #242732;
 
-  --kor-glass-bg: rgba(255, 255, 255, 0.08);
-  --kor-glass-border: rgba(255, 255, 255, 0.14);
-  --kor-glass-blur: 24px;
+  --gossip-glass-bg: rgba(255, 255, 255, 0.08);
+  --gossip-glass-border: rgba(255, 255, 255, 0.14);
+  --gossip-glass-blur: 24px;
 
-  --kor-text: #f2f3f7;
-  --kor-text-muted: rgba(242, 243, 247, 0.62);
+  --gossip-text: #f2f3f7;
+  --gossip-text-muted: rgba(242, 243, 247, 0.62);
 
-  --kor-accent: #5b8cff;
-  --kor-accent-soft: rgba(91, 140, 255, 0.14);
-  --kor-accent-2: #ff7a59;
+  --gossip-accent: #5b8cff;
+  --gossip-accent-soft: rgba(91, 140, 255, 0.14);
+  --gossip-accent-2: #ff7a59;
 
-  --kor-radius-sm: 10px;
-  --kor-radius-md: 14px;
-  --kor-radius-lg: 20px;
-  --kor-radius-pill: 999px;
+  --gossip-radius-sm: 10px;
+  --gossip-radius-md: 14px;
+  --gossip-radius-lg: 20px;
+  --gossip-radius-pill: 999px;
 
-  --kor-shadow-glass: 0 8px 32px -8px rgba(0, 0, 0, 0.45);
+  --gossip-shadow-glass: 0 8px 32px -8px rgba(0, 0, 0, 0.45);
 
-  --kor-font-display: "Sora", system-ui, sans-serif;
-  --kor-font-body: "Inter", system-ui, sans-serif;
+  --gossip-font-display: "Sora", system-ui, sans-serif;
+  --gossip-font-body: "Inter", system-ui, sans-serif;
 
-  --kor-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --kor-motion-fast: 200ms;
-  --kor-motion-base: 280ms;
-  --kor-motion-slow: 400ms;
+  --gossip-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --gossip-motion-fast: 200ms;
+  --gossip-motion-base: 280ms;
+  --gossip-motion-slow: 400ms;
 }
 
 [data-theme="light"] {
   color-scheme: light;
-  --kor-bg: #f7f7fa;
-  --kor-surface: #ffffff;
-  --kor-surface-2: #f0f0f4;
-  --kor-border: #e2e2e8;
+  --gossip-bg: #f7f7fa;
+  --gossip-surface: #ffffff;
+  --gossip-surface-2: #f0f0f4;
+  --gossip-border: #e2e2e8;
 
-  --kor-glass-bg: rgba(255, 255, 255, 0.55);
-  --kor-glass-border: rgba(20, 20, 30, 0.08);
+  --gossip-glass-bg: rgba(255, 255, 255, 0.55);
+  --gossip-glass-border: rgba(20, 20, 30, 0.08);
 
-  --kor-text: #14161b;
-  --kor-text-muted: rgba(20, 22, 27, 0.62);
+  --gossip-text: #14161b;
+  --gossip-text-muted: rgba(20, 22, 27, 0.62);
 
-  --kor-accent: #3654e0;
-  --kor-accent-soft: rgba(54, 84, 224, 0.1);
-  --kor-accent-2: #d9562b;
+  --gossip-accent: #3654e0;
+  --gossip-accent-soft: rgba(54, 84, 224, 0.1);
+  --gossip-accent-2: #d9562b;
 
-  --kor-shadow-glass: 0 8px 32px -12px rgba(20, 20, 30, 0.18);
+  --gossip-shadow-glass: 0 8px 32px -12px rgba(20, 20, 30, 0.18);
 }
 
-.kor-glass {
-  background: var(--kor-glass-bg);
-  border: 1px solid var(--kor-glass-border);
-  backdrop-filter: blur(var(--kor-glass-blur)) saturate(160%);
-  -webkit-backdrop-filter: blur(var(--kor-glass-blur)) saturate(160%);
-  box-shadow: var(--kor-shadow-glass);
-  border-radius: var(--kor-radius-lg);
+.gossip-glass {
+  background: var(--gossip-glass-bg);
+  border: 1px solid var(--gossip-glass-border);
+  backdrop-filter: blur(var(--gossip-glass-blur)) saturate(160%);
+  -webkit-backdrop-filter: blur(var(--gossip-glass-blur)) saturate(160%);
+  box-shadow: var(--gossip-shadow-glass);
+  border-radius: var(--gossip-radius-lg);
 }

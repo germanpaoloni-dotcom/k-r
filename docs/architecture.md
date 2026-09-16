@@ -39,6 +39,8 @@ Mientras no haya nombre definitivo, el proyecto sigue llamándose **DISCOVER** e
 
 **Recomendación de trabajo:** *Orbita* o *Bloom* son los candidatos más fuertes por balance entre claridad conceptual, pronunciación internacional y disponibilidad de marca probable. Ninguno se asume final: se mantiene DISCOVER como nombre de proyecto hasta validación de marca/dominio.
 
+> **Actualización posterior:** de esta lista se terminó eligiendo **Kōr**, y más adelante el proyecto se renombró a **Gossip** (nombre actual — ver README). Esta sección queda como registro histórico de la exploración de naming, sin editar.
+
 ---
 
 ## C. Propuesta de valor

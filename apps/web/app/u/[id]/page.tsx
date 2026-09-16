@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Avatar } from "@kor/ui";
+import { Avatar } from "@gossip/ui";
 import {
   ChevronLeftIcon,
   MoreHorizontalIcon,
@@ -193,7 +193,7 @@ export default function ProfilePage() {
           <strong className="text-text">{mutuals.length}</strong> en común
         </span>
         <span>
-          <strong className="text-text">{daysInKor}</strong> día{daysInKor === 1 ? "" : "s"} en Kör
+          <strong className="text-text">{daysInKor}</strong> día{daysInKor === 1 ? "" : "s"} en Gossip
         </span>
       </div>
 

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Avatar } from "@kor/ui";
+import { Avatar } from "@gossip/ui";
 import {
   HeartIcon,
   HeartFilledIcon,

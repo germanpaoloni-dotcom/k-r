@@ -28,7 +28,7 @@ export default function LoginPage() {
 
   return (
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-5">
-      <h1 className="font-display text-[22px] font-semibold">Ingresá a Kōr</h1>
+      <h1 className="font-display text-[22px] font-semibold">Ingresá a Gossip</h1>
       <p className="mt-1.5 text-[13.5px] text-text-muted">Volvé a descubrir tu ciudad.</p>
 
       <form onSubmit={onSubmit} className="mt-7 flex flex-col gap-3.5">

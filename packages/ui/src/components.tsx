@@ -1,6 +1,6 @@
 import type { ButtonHTMLAttributes, PropsWithChildren, HTMLAttributes } from "react";
 
-/** Botón primario del sistema Kōr. Superficie sólida, nunca vidrio (accesibilidad de controles). */
+/** Botón primario del sistema Gossip. Superficie sólida, nunca vidrio (accesibilidad de controles). */
 export function Button({
   children,
   variant = "primary",
@@ -9,11 +9,11 @@ export function Button({
   ButtonHTMLAttributes<HTMLButtonElement> & { variant?: "primary" | "ghost" }
 >) {
   const base =
-    "kor-btn inline-flex items-center justify-center gap-2 rounded-[14px] px-4 py-2.5 text-[14.5px] font-medium transition-transform active:scale-[0.98]";
+    "gossip-btn inline-flex items-center justify-center gap-2 rounded-[14px] px-4 py-2.5 text-[14.5px] font-medium transition-transform active:scale-[0.98]";
   const styles =
     variant === "primary"
-      ? "bg-[var(--kor-accent)] text-white hover:brightness-110"
-      : "bg-transparent text-[var(--kor-text)] border border-[var(--kor-border)] hover:bg-[var(--kor-surface-2)]";
+      ? "bg-[var(--gossip-accent)] text-white hover:brightness-110"
+      : "bg-transparent text-[var(--gossip-text)] border border-[var(--gossip-border)] hover:bg-[var(--gossip-surface-2)]";
   return (
     <button className={`${base} ${styles}`} {...props}>
       {children}
@@ -28,7 +28,7 @@ export function GlassSurface({
   ...props
 }: PropsWithChildren<HTMLAttributes<HTMLDivElement>>) {
   return (
-    <div className={`kor-glass ${className}`} {...props}>
+    <div className={`gossip-glass ${className}`} {...props}>
       {children}
     </div>
   );
@@ -84,7 +84,7 @@ export function Card({
 }: PropsWithChildren<HTMLAttributes<HTMLDivElement>>) {
   return (
     <div
-      className={`rounded-[14px] border border-[var(--kor-border)] bg-[var(--kor-surface)] ${className}`}
+      className={`rounded-[14px] border border-[var(--gossip-border)] bg-[var(--gossip-surface)] ${className}`}
       {...props}
     >
       {children}

@@ -4,7 +4,7 @@ import {
   games,
   gameSessions,
   gameAnswers,
-  korCredits,
+  gossipCredits,
   orbCosmetics,
   badges,
   pets,
@@ -167,8 +167,8 @@ export interface SubmitAnswerInput {
 }
 
 /**
- * Registra una respuesta y, si es correcta, acredita Kör Créditos (ledger
- * append-only, ver kor_credits) y otorga el badge "primer_acierto" la
+ * Registra una respuesta y, si es correcta, acredita Gossip Créditos (ledger
+ * append-only, ver gossip_credits) y otorga el badge "primer_acierto" la
  * primera vez que un usuario acierta algo (idempotente vía inventory).
  */
 export async function submitAnswer(sessionId: string, userId: string, input: SubmitAnswerInput) {
@@ -192,7 +192,7 @@ export async function submitAnswer(sessionId: string, userId: string, input: Sub
   );
 
   if (creditsAwarded > 0) {
-    await db.insert(korCredits).values({
+    await db.insert(gossipCredits).values({
       userId,
       delta: creditsAwarded,
       reason: "game_correct_answer",
@@ -214,23 +214,23 @@ export async function listSessionAnswers(sessionId: string) {
 }
 
 /* ---------------------------------------------------------------------- */
-/* Kör Créditos — ledger append-only, nunca balance mutable                 */
+/* Gossip Créditos — ledger append-only, nunca balance mutable                 */
 /* ---------------------------------------------------------------------- */
 
 export async function getBalance(userId: string): Promise<number> {
   const rows = await db
-    .select({ balance: sql<number>`coalesce(sum(${korCredits.delta}), 0)::int` })
-    .from(korCredits)
-    .where(eq(korCredits.userId, userId));
+    .select({ balance: sql<number>`coalesce(sum(${gossipCredits.delta}), 0)::int` })
+    .from(gossipCredits)
+    .where(eq(gossipCredits.userId, userId));
   return rows[0]?.balance ?? 0;
 }
 
 export async function getCreditsHistory(userId: string, limit = 30) {
   return db
     .select()
-    .from(korCredits)
-    .where(eq(korCredits.userId, userId))
-    .orderBy(desc(korCredits.createdAt))
+    .from(gossipCredits)
+    .where(eq(gossipCredits.userId, userId))
+    .orderBy(desc(gossipCredits.createdAt))
     .limit(limit);
 }
 
@@ -258,7 +258,7 @@ export async function buyCosmetic(cosmeticId: string, userId: string) {
   if (balance < cosmetic.creditsCost) throw new PlayError(400, "Créditos insuficientes.");
 
   await db.transaction(async (tx) => {
-    await tx.insert(korCredits).values({
+    await tx.insert(gossipCredits).values({
       userId,
       delta: -cosmetic.creditsCost,
       reason: "cosmetic_purchase",
@@ -399,7 +399,7 @@ export async function createUserPet(userId: string, input: { species: string; na
   );
 }
 
-/** Catálogo curado de Kör Pets — 25 mascotas fijas, sembradas en post-migrate.sql. */
+/** Catálogo curado de Gossip Pets — 25 mascotas fijas, sembradas en post-migrate.sql. */
 export async function listPetDefinitions() {
   return db.select().from(petDefinitions).orderBy(petDefinitions.species, petDefinitions.name);
 }

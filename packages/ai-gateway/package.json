@@ -1,5 +1,5 @@
 {
-  "name": "@kor/ai-gateway",
+  "name": "@gossip/ai-gateway",
   "version": "0.1.0",
   "private": true,
   "type": "module",

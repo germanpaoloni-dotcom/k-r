@@ -1,5 +1,5 @@
 {
-  "name": "@kor/api",
+  "name": "@gossip/api",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -17,8 +17,8 @@
     "@fastify/jwt": "^9.0.1",
     "@fastify/rate-limit": "^10.1.1",
     "@fastify/sensible": "^6.0.2",
-    "@kor/ai-gateway": "*",
-    "@kor/types": "*",
+    "@gossip/ai-gateway": "*",
+    "@gossip/types": "*",
     "bcryptjs": "^2.4.3",
     "dotenv": "^16.4.5",
     "drizzle-orm": "^0.33.0",

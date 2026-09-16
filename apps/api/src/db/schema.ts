@@ -83,7 +83,7 @@ export const moderationStatusEnum = pgEnum("moderation_status", [
 export const groupVisibilityEnum = pgEnum("group_visibility", ["public", "private"]);
 export const groupRoleEnum = pgEnum("group_role", ["owner", "member"]);
 
-// --- Nuevos enums Kör Pets (paquete "Perfil + Pets") ----------------------
+// --- Nuevos enums Gossip Pets (paquete "Perfil + Pets") ----------------------
 
 export const petRarityEnum = pgEnum("pet_rarity", ["common", "rare", "epic", "legendary"]);
 
@@ -529,7 +529,7 @@ export const reviews = pgTable("reviews", {
 /* ---------------------------------------------------------------------- */
 /* Marketplace — checkout + comisión por venta desde V1                     */
 /* Mercado Pago Marketplace (split payments) vía checkout hosteado:         */
-/* Kōr nunca toca datos de tarjeta directamente (evita alcance PCI).        */
+/* Gossip nunca toca datos de tarjeta directamente (evita alcance PCI).        */
 /* ---------------------------------------------------------------------- */
 
 export const orders = pgTable(
@@ -752,7 +752,7 @@ export const decilo = pgTable(
 );
 
 /**
- * Kör Play — groundwork únicamente (Fase 2: "tablas + dominio vacío, sin UI
+ * Gossip Play — groundwork únicamente (Fase 2: "tablas + dominio vacío, sin UI
  * todavía"). El dominio funcional (src/domains/play con lógica real) es
  * Fase 5, cuando `groups` ya exista. Ver domains/play/README.md.
  */
@@ -806,7 +806,12 @@ export const gameAnswers = pgTable("game_answers", {
  * cosméticos). No existe ni existirá una operación de retiro: es una
  * restricción de diseño, no una política — ver kor-arquitectura-v2.1.md §13.
  */
-export const korCredits = pgTable("kor_credits", {
+// Nombre físico de tabla sin tocar a propósito ("kor_credits") — renombrarlo
+// dispara un prompt interactivo de drizzle-kit (create vs. rename) que no se
+// puede responder en modo no interactivo; el identificador interno de DB no
+// lo ve nadie fuera del código, así que no vale el riesgo de tocar el historial
+// de migraciones por esto. La variable de TS sí queda con el nombre nuevo.
+export const gossipCredits = pgTable("kor_credits", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: uuid("user_id")
     .notNull()
@@ -838,8 +843,8 @@ export const badges = pgTable("badges", {
 });
 
 /**
- * Catálogo curado de Kör Pets — 25 mascotas fijas (paquete "Perfil + Pets",
- * adaptado a la arquitectura real). A diferencia de `pets` (Fase 5, Kör
+ * Catálogo curado de Gossip Pets — 25 mascotas fijas (paquete "Perfil + Pets",
+ * adaptado a la arquitectura real). A diferencia de `pets` (Fase 5, Gossip
  * Play), acá `species`/`name`/`personality` NO los elige el usuario: son
  * fijos por `key`. Sin endpoint de alta pública todavía (mismo criterio que
  * `games`/`badges` — no hay sistema de roles admin); el catálogo se siembra

@@ -1,6 +1,6 @@
 /**
  * Interfaz agnóstica de proveedor de pago — mismo criterio que
- * `@kor/ai-gateway` para IA (ver README): el dominio de checkout nunca
+ * `@gossip/ai-gateway` para IA (ver README): el dominio de checkout nunca
  * llama a un SDK de pago directo, siempre pasa por acá. Hoy la única
  * implementación es `MockPaymentProvider`; el conector real de Mercado
  * Pago Marketplace se suma cuando haya credenciales de sandbox, sin

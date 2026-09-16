@@ -1,5 +1,5 @@
 {
-  "name": "@kor/web",
+  "name": "@gossip/web",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -9,8 +9,8 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@kor/types": "*",
-    "@kor/ui": "*",
+    "@gossip/types": "*",
+    "@gossip/ui": "*",
     "next": "^15.0.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"

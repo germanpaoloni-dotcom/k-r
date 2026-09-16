@@ -27,7 +27,7 @@ export default function RegisterPage() {
 
   return (
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-5">
-      <h1 className="font-display text-[22px] font-semibold">Creá tu cuenta en Kōr</h1>
+      <h1 className="font-display text-[22px] font-semibold">Creá tu cuenta en Gossip</h1>
       <p className="mt-1.5 text-[13.5px] text-text-muted">
         Empezá a descubrir y publicar lo que pasa en tu ciudad.
       </p>

@@ -4,9 +4,9 @@ import "./globals.css";
 // Las fuentes se cargan por <link> (no con next/font) para no depender de
 // acceso a Google Fonts en tiempo de build — más portable entre entornos.
 export const metadata: Metadata = {
-  title: "Kōr — descubrí tu ciudad",
+  title: "Gossip — descubrí tu ciudad",
   description:
-    "Kōr conecta contenido real, lugares, negocios y eventos para responder una sola pregunta: ¿qué hago ahora?",
+    "Gossip conecta contenido real, lugares, negocios y eventos para responder una sola pregunta: ¿qué hago ahora?",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

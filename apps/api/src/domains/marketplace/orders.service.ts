@@ -7,7 +7,7 @@ import { MarketplaceError } from "./businesses.service.js";
 import { paymentProvider } from "./payment-provider.js";
 
 /**
- * Comisión de Kör sobre el subtotal, tal como la describe README ("checkout +
+ * Comisión de Gossip sobre el subtotal, tal como la describe README ("checkout +
  * comisión por venta desde V1"). Se descuenta del payout al negocio, nunca se
  * le suma al comprador — placeholder hasta que haya una tabla de tarifas por
  * categoría/negocio.

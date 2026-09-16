@@ -1,5 +1,5 @@
 /**
- * Capa de IA agnóstica de Kōr (Fase 7 — Kör AI). Cualquier dominio que
+ * Capa de IA agnóstica de Gossip (Fase 7 — Gossip AI). Cualquier dominio que
  * necesite lenguaje natural real pasa por acá, nunca llama un SDK de IA
  * directo — mismo criterio que `payment-provider.ts` en marketplace.
  *

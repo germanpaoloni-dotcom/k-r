@@ -21,7 +21,7 @@ export interface PostDto {
   commentCount: number;
   likedByMe: boolean;
   savedByMe: boolean;
-  /** "¿Por qué veo esto?" (Fase 7 — Kör AI) — solo lo llenan los feeds, ver domains/feed/service.ts. */
+  /** "¿Por qué veo esto?" (Fase 7 — Gossip AI) — solo lo llenan los feeds, ver domains/feed/service.ts. */
   reasonWhySeeing?: string;
 }
 

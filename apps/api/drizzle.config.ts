@@ -6,6 +6,6 @@ export default defineConfig({
   out: "../../infra/migrations",
   dialect: "postgresql",
   dbCredentials: {
-    url: process.env.DATABASE_URL ?? "postgres://kor:kor@localhost:5432/kor_dev",
+    url: process.env.DATABASE_URL ?? "postgres://gossip:gossip@localhost:5432/gossip_dev",
   },
 });

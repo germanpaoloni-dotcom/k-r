@@ -1,18 +1,20 @@
+name: gossip
+
 services:
   postgres:
     build:
       context: ./infra
       dockerfile: postgres.Dockerfile
     environment:
-      POSTGRES_USER: kor
-      POSTGRES_PASSWORD: kor
-      POSTGRES_DB: kor_dev
+      POSTGRES_USER: gossip
+      POSTGRES_PASSWORD: gossip
+      POSTGRES_DB: gossip_dev
     ports:
       - "5432:5432"
     volumes:
-      - kor_pg_data:/var/lib/postgresql/data
+      - gossip_pg_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U kor"]
+      test: ["CMD-SHELL", "pg_isready -U gossip"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -23,4 +25,4 @@ services:
       - "6379:6379"
 
 volumes:
-  kor_pg_data:
+  gossip_pg_data:

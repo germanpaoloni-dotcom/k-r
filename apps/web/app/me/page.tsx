@@ -80,7 +80,7 @@ export default function MePage() {
         {!petLoading && !pet && petDefinitions.length > 0 && (
           <>
             <p className="mb-3 text-[12.5px] text-text-muted">
-              Elegí una mascota del catálogo — vive en Kör, no dentro de tu perfil.
+              Elegí una mascota del catálogo — vive en Gossip, no dentro de tu perfil.
             </p>
             <PetPicker definitions={petDefinitions} onAdopted={setPet} />
           </>

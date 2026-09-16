@@ -1,6 +1,6 @@
 /**
  * Detección de intención — heurística explicable por palabras clave y
- * puntuación, NO un modelo de IA real (ese es Kör AI, Fase 7 del roadmap).
+ * puntuación, NO un modelo de IA real (ese es Gossip AI, Fase 7 del roadmap).
  * Mismo espíritu que el resto de los placeholders documentados del proyecto
  * (ej. "recommended" en feed/service.ts): funciona hoy, se reemplaza sin
  * romper el contrato de la API cuando exista la capa de IA agnóstica.

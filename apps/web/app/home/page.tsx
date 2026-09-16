@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Avatar } from "@kor/ui";
+import { Avatar } from "@gossip/ui";
 import { BellIcon, PlusIcon } from "../../components/icons";
 import { PostCard } from "../../components/PostCard";
 import { getSession, getFeed, me, type FeedTab, type PostDto, type UserPublic } from "../../lib/api";
@@ -73,7 +73,7 @@ export default function HomePage() {
   return (
     <main className="relative mx-auto min-h-screen max-w-lg pb-24">
       <div className="flex items-center justify-between px-4 pb-2 pt-4">
-        <span className="font-display text-[17px] font-semibold tracking-tight">Kōr</span>
+        <span className="font-display text-[17px] font-semibold tracking-tight">Gossip</span>
         <div className="flex items-center gap-3.5">
           <BellIcon size={22} className="text-text" />
           {user && (
@@ -84,7 +84,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      <div className="kor-glass sticky top-2 z-10 mx-4 my-2.5 flex gap-0.5 overflow-x-auto rounded-full p-1 [scrollbar-width:none]">
+      <div className="gossip-glass sticky top-2 z-10 mx-4 my-2.5 flex gap-0.5 overflow-x-auto rounded-full p-1 [scrollbar-width:none]">
         {TABS.map((t) => (
           <button
             key={t.id}
@@ -122,7 +122,7 @@ export default function HomePage() {
 
       <Link
         href="/create"
-        className="kor-glass fixed bottom-6 right-4 flex h-[52px] w-[52px] items-center justify-center rounded-full"
+        className="gossip-glass fixed bottom-6 right-4 flex h-[52px] w-[52px] items-center justify-center rounded-full"
         aria-label="Crear post"
       >
         <PlusIcon size={22} />

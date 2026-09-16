@@ -1,5 +1,5 @@
 /**
- * Motor de comportamiento de Kör Pets — fundacional (Fase 1 del paquete
+ * Motor de comportamiento de Gossip Pets — fundacional (Fase 1 del paquete
  * "Perfil + Pets"): cooldowns, exclusión de pantallas críticas y reduced
  * motion. Las animaciones de cada travesura (PetInteractionLayer) son un
  * paso siguiente — este motor ya queda listo para que las consuman.

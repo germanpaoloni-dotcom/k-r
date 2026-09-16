@@ -5,7 +5,7 @@
  * comments, event_attendance) y las traduce a un estado visual por fuente.
  * Cacheado con TTL corto porque es barato de recalcular y cambia seguido.
  *
- * Cualquier fuente de actividad nueva (ej. Kör Play más adelante) solo
+ * Cualquier fuente de actividad nueva (ej. Gossip Play más adelante) solo
  * necesita aportar señales con la forma { sourceType, sourceId, at } a
  * `buildOrbs` — no requiere migraciones ni tocar esta función de estado.
  */

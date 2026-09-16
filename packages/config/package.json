@@ -1,5 +1,5 @@
 {
-  "name": "@kor/config",
+  "name": "@gossip/config",
   "version": "0.1.0",
   "private": true,
   "type": "module",

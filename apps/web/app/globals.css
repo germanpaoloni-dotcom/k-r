@@ -1,4 +1,4 @@
-@import "@kor/ui/src/tokens.css";
+@import "@gossip/ui/src/tokens.css";
 
 @tailwind base;
 @tailwind components;
@@ -6,10 +6,10 @@
 
 html,
 body {
-  background: var(--kor-bg);
-  color: var(--kor-text);
+  background: var(--gossip-bg);
+  color: var(--gossip-text);
 }
 
 body {
-  font-family: var(--kor-font-body);
+  font-family: var(--gossip-font-body);
 }

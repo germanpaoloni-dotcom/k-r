@@ -5,7 +5,7 @@ async function main() {
   const app = await buildApp();
   try {
     await app.listen({ port: config.PORT, host: "0.0.0.0" });
-    app.log.info(`Kōr API escuchando en :${config.PORT}`);
+    app.log.info(`Gossip API escuchando en :${config.PORT}`);
   } catch (err) {
     app.log.error(err);
     process.exit(1);

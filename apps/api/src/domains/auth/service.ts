@@ -6,7 +6,7 @@ import { db } from "../../db/index.js";
 import { refreshTokens, users } from "../../db/schema.js";
 import { firstOrThrow } from "../../db/utils.js";
 import { config } from "../../config.js";
-import type { RegisterInput, LoginInput } from "@kor/types";
+import type { RegisterInput, LoginInput } from "@gossip/types";
 
 const REFRESH_BYTES = 32;
 

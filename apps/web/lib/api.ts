@@ -62,7 +62,7 @@ export function me(accessToken: string) {
 
 /* Almacenamiento de sesión en el navegador — app real, no artifact:
    localStorage es válido acá (no confundir con la restricción de previews). */
-const STORAGE_KEY = "kor.session";
+const STORAGE_KEY = "gossip.session";
 
 export function saveSession(tokens: AuthTokens) {
   if (typeof window === "undefined") return;
@@ -270,7 +270,7 @@ export function getActivityState(userId: string) {
 }
 
 /* ---------------------------------------------------------------------- */
-/* Kör Pets                                                                  */
+/* Gossip Pets                                                                  */
 /* ---------------------------------------------------------------------- */
 
 export interface PetDefinitionDto {

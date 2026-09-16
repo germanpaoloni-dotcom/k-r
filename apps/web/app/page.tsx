@@ -11,7 +11,7 @@ const pillars = [
   },
   {
     title: "Intelligence",
-    body: "Preguntale a Kōr qué hacer hoy y recibí opciones reales, no un feed infinito.",
+    body: "Preguntale a Gossip qué hacer hoy y recibí opciones reales, no un feed infinito.",
   },
 ];
 
@@ -29,8 +29,8 @@ const categories = [
 export default function HomePage() {
   return (
     <main className="mx-auto max-w-5xl px-5">
-      <nav className="kor-glass sticky top-4 z-10 mt-4 flex items-center justify-between rounded-full px-5 py-3">
-        <span className="font-display text-[15px] font-semibold tracking-tight">Kōr</span>
+      <nav className="gossip-glass sticky top-4 z-10 mt-4 flex items-center justify-between rounded-full px-5 py-3">
+        <span className="font-display text-[15px] font-semibold tracking-tight">Gossip</span>
         <div className="flex items-center gap-2">
           <Link
             href="/login"
@@ -55,7 +55,7 @@ export default function HomePage() {
           Tu ciudad, descubierta a través de personas.
         </h1>
         <p className="mt-5 max-w-xl text-[17px] leading-relaxed text-text-muted">
-          Kōr combina contenido real, mapa y una IA que entiende intención para responder la
+          Gossip combina contenido real, mapa y una IA que entiende intención para responder la
           pregunta que Instagram nunca resuelve: <em>¿qué hago ahora?</em>
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
@@ -100,7 +100,7 @@ export default function HomePage() {
       </section>
 
       <footer className="border-t border-border py-8 text-[12.5px] text-text-muted">
-        Kōr · Fase 1 — Social core en construcción.
+        Gossip · Fase 1 — Social core en construcción.
       </footer>
     </main>
   );

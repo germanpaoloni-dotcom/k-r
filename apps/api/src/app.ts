@@ -47,7 +47,7 @@ export async function buildApp() {
   await app.register(jwt, { secret: config.JWT_ACCESS_SECRET });
   await app.register(authenticate);
 
-  app.get("/health", async () => ({ status: "ok", service: "@kor/api" }));
+  app.get("/health", async () => ({ status: "ok", service: "@gossip/api" }));
 
   await app.register(authRoutes, { prefix: "/api/v1" });
   await app.register(usersRoutes, { prefix: "/api/v1" });
