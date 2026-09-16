@@ -1,0 +1,1 @@
+ALTER TABLE "promotions" ADD COLUMN "duration_days" integer NOT NULL;

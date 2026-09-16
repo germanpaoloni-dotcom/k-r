@@ -19,6 +19,11 @@ import {
   fulfillOrder,
   resolveOrderPayment,
 } from "./orders.service.js";
+import {
+  createPromotion,
+  listBusinessPromotions,
+  resolvePromotionPayment,
+} from "./promotions.service.js";
 
 const hoursSchema = z.record(z.string(), z.unknown());
 
@@ -53,6 +58,13 @@ const createOrderSchema = z.object({
 });
 
 const resolvePaymentSchema = z.object({ approve: z.boolean() });
+
+const createPromotionSchema = z.object({
+  targetType: z.enum(["business", "product"]),
+  targetId: z.string().uuid(),
+  budgetCents: z.number().int().min(1),
+  days: z.number().int().min(1).max(30),
+});
 
 function handleError(err: unknown, reply: FastifyReply) {
   if (err instanceof MarketplaceError) {
@@ -284,6 +296,49 @@ export async function marketplaceRoutes(app: FastifyInstance) {
     try {
       const order = await resolveOrderPayment(orderId, parsed.data.approve);
       return reply.send({ data: order, error: null });
+    } catch (err) {
+      return handleError(err, reply);
+    }
+  });
+
+  // --- Publicidad (Fase 8) --------------------------------------------------
+  // Mismo circuito de pago mockeado que orders — ver payment-provider.ts.
+
+  app.post("/businesses/:id/promotions", { preHandler: app.authenticate }, async (req, reply) => {
+    const { id } = req.params as { id: string };
+    const parsed = createPromotionSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return reply.status(400).send({ data: null, error: parsed.error.flatten() });
+    }
+    const { sub } = req.user as { sub: string };
+    try {
+      const promotion = await createPromotion(id, sub, parsed.data);
+      return reply.status(201).send({ data: promotion, error: null });
+    } catch (err) {
+      return handleError(err, reply);
+    }
+  });
+
+  app.get("/businesses/:id/promotions", { preHandler: app.authenticate }, async (req, reply) => {
+    const { id } = req.params as { id: string };
+    const { sub } = req.user as { sub: string };
+    try {
+      const list = await listBusinessPromotions(id, sub);
+      return reply.send({ data: list, error: null });
+    } catch (err) {
+      return handleError(err, reply);
+    }
+  });
+
+  app.post("/payments/mock-checkout-promotion/:promotionId/resolve", async (req, reply) => {
+    const { promotionId } = req.params as { promotionId: string };
+    const parsed = resolvePaymentSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return reply.status(400).send({ data: null, error: parsed.error.flatten() });
+    }
+    try {
+      const promotion = await resolvePromotionPayment(promotionId, parsed.data.approve);
+      return reply.send({ data: promotion, error: null });
     } catch (err) {
       return handleError(err, reply);
     }

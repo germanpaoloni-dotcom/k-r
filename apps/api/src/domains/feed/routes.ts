@@ -5,6 +5,7 @@ import {
   trendingFeed,
   nearbyFeed,
   miGenteFeed,
+  dismissFromForYou,
   type FollowingMode,
 } from "./service.js";
 import { getOrbsForViewer } from "../orbs/service.js";
@@ -27,6 +28,14 @@ export async function feedRoutes(app: FastifyInstance) {
     const query = req.query as { limit?: string };
     const posts = await forYouFeed(viewer?.sub, query.limit ? Number(query.limit) : undefined);
     return reply.send({ data: posts, error: null });
+  });
+
+  // Feedback explícito "no me interesa" (Fase 8) — excluye el post de for-you a futuro.
+  app.post("/feed/for-you/:postId/dismiss", { preHandler: app.authenticate }, async (req, reply) => {
+    const { postId } = req.params as { postId: string };
+    const { sub } = req.user as { sub: string };
+    await dismissFromForYou(sub, postId);
+    return reply.status(204).send();
   });
 
   app.get("/feed/trending", async (req, reply) => {

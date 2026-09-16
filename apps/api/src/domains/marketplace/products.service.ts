@@ -3,6 +3,7 @@ import { db } from "../../db/index.js";
 import { businesses, products } from "../../db/schema.js";
 import { firstOrThrow } from "../../db/utils.js";
 import { MarketplaceError } from "./businesses.service.js";
+import { activePromotedProductIds } from "./promotions.service.js";
 
 export interface CreateProductInput {
   name: string;
@@ -27,6 +28,7 @@ export interface ProductDto {
   category: string | null;
   createdAt: string;
   business: { id: string; name: string };
+  isPromoted: boolean;
 }
 
 const productSelect = {
@@ -61,7 +63,7 @@ function baseQuery() {
   return db.select(productSelect).from(products).innerJoin(businesses, eq(businesses.id, products.businessId));
 }
 
-function toDto(row: ProductRow): ProductDto {
+function toDto(row: ProductRow, isPromoted = false): ProductDto {
   return {
     id: row.id,
     name: row.name,
@@ -73,6 +75,7 @@ function toDto(row: ProductRow): ProductDto {
     category: row.category,
     createdAt: row.createdAt.toISOString(),
     business: { id: row.businessId, name: row.businessName },
+    isPromoted,
   };
 }
 
@@ -133,7 +136,9 @@ export async function createProduct(
 
 export async function getProductById(id: string): Promise<ProductDto | null> {
   const [row] = await baseQuery().where(eq(products.id, id));
-  return row ? toDto(row) : null;
+  if (!row) return null;
+  const promoted = await activePromotedProductIds([row.id]);
+  return toDto(row, promoted.has(row.id));
 }
 
 export interface ListProductsParams {
@@ -156,7 +161,11 @@ export async function listProducts(params: ListProductsParams = {}): Promise<Pro
   let query = baseQuery();
   const filtered = conditions.length ? query.where(and(...conditions)) : query;
   const rows = await filtered.orderBy(desc(products.createdAt)).limit(params.limit ?? 30);
-  return rows.map(toDto);
+
+  const promoted = await activePromotedProductIds(rows.map((r) => r.id));
+  const dtos = rows.map((r) => toDto(r, promoted.has(r.id)));
+  // Promocionados primero (Fase 8), siempre marcados con `isPromoted`.
+  return dtos.sort((a, b) => Number(b.isPromoted) - Number(a.isPromoted));
 }
 
 export async function updateProduct(id: string, userId: string, input: UpdateProductInput): Promise<ProductDto> {

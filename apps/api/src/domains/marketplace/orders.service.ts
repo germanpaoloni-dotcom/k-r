@@ -158,7 +158,7 @@ export async function createOrder(buyerId: string, input: CreateOrderInput): Pro
   });
 
   const paymentResult = await paymentProvider.createPayment({
-    orderId: order.id,
+    referenceId: order.id,
     amountCents: order.totalCents,
     currency: order.currency,
   });

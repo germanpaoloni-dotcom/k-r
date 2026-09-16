@@ -74,7 +74,7 @@ Mientras esta sesión de Claude no tenga permiso de push directo al repo, cada a
 
 Por defecto busca el `.bundle` más reciente en tu carpeta de Descargas, lo aplica sobre `~/kor` (o clona el repo ahí si todavía no existe), pushea a GitHub, y archiva el bundle ya usado en `Descargas/kor-bundles-aplicados`. Nunca pisa commits locales: si no puede aplicar en fast-forward, avisa y no toca nada.
 
-## Estado actual (Fase 7 — Kör AI: groundwork heurístico)
+## Estado actual (Fase 8 — Escala: en curso)
 
 Construido y probado de punta a punta según el roadmap de 8 fases de [`kor-arquitectura-v2.1.md`](../../claude/kor-arquitectura-v2.1.md) (Kör pasó de "app de descubrimiento" a red social masiva — ver también v2 y Fase 0 en el mismo lugar).
 
@@ -133,6 +133,14 @@ Construido y probado de punta a punta según el roadmap de 8 fases de [`kor-arqu
 - ✅ **Explicabilidad del feed ("¿por qué veo esto?")**: los 5 feeds (`following`, `for-you`, `trending`, `mi-gente`, `nearby`) ahora devuelven `reasonWhySeeing` en cada post — sin IA, es texto determinístico por algoritmo (ej. "Seguís a @x", "Tendencia — muchos likes esta semana").
 - ⏳ Sin credenciales de Anthropic configuradas en este entorno todavía — todo corre hoy con el fallback heurístico (`source: "heuristic"` en la respuesta de `/ai/que-hago`). Pegar `ANTHROPIC_API_KEY` en `.env` activa `ClaudeProvider` sin tocar código.
 - ⏳ Búsqueda semántica (`content_embeddings`, ya en schema desde Fase 1) queda pendiente: no tiene un mock razonable — requiere un modelo de embeddings real para no ser directamente engañosa, a diferencia del resto de los placeholders del proyecto.
+
+**Fase 8 — Escala (en curso):**
+
+- ✅ **Recomendador real**: `for-you` dejó de ser "posts públicos recientes" — ranking por decaimiento de recencia + cuentas que seguís + afinidad por autor/categoría (a partir de tus likes), sin ML, scoring lineal explicable (mismo criterio que `decilo/intent.ts`). Cada impresión se loguea en `recommendations` (tabla que ya estaba en el schema, sin usar). `POST /feed/for-you/:postId/dismiss` es el feedback explícito "no me interesa" del doc de arquitectura (P2) — excluye ese post para siempre.
+- ✅ **Analytics**: `GET /analytics/creator` (propio: posts, likes, comments, impresiones — reutiliza el log de `recommendations`, no hay tabla de tracking nueva) y `GET /businesses/:id/analytics` (dueño: órdenes, revenue, comisión pagada, payouts pendientes/liquidados, top productos — todo sobre datos reales de Fase 6, no estimados).
+- ✅ **Publicidad**: tabla `promotions` nueva — `POST /businesses/:id/promotions` (negocio o producto propio, mismo circuito de pago mockeado que `orders`), `GET /businesses/:id/promotions`, resolución vía `POST /payments/mock-checkout-promotion/:id/resolve`. `GET /businesses` y `GET /products` rankean lo promocionado activo primero, siempre con `isPromoted:true` explícito (nunca mezclado de forma indistinguible de lo orgánico).
+- ✅ **Infra/perf**: índices que faltaban en `orders`/`order_items`/`payments`/`payouts`/`recommendations` (Fase 6/7 los había dejado sin cubrir), rate limit propio para `/auth/login` y `/auth/register` (10/min vs. 100/min global — mitiga fuerza bruta), `npm run settle:payouts` (script standalone, mismo patrón que `cleanup:mira-esto`) liquida los payouts cuyo `scheduledAt` ya pasó.
+- ⏳ Todo lo de arriba corre a escala de MVP (scoring en memoria sobre hasta 150 candidatos, sin cache de resultados, sin cola de jobs real) — pensado para no quedar mal diseñado cuando haya que crecerlo, no para carga de producción todavía.
 
 ## Decisiones de Fase 0 ya resueltas
 

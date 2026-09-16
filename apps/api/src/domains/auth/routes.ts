@@ -2,8 +2,12 @@ import type { FastifyInstance } from "fastify";
 import { registerInputSchema, loginInputSchema } from "@kor/types";
 import { register, login, refresh, logout, AuthError } from "./service.js";
 
+// Límite más estricto que el global (100/min en app.ts) — login/register son
+// el blanco típico de fuerza bruta / credential stuffing (Fase 8 — Escala).
+const AUTH_RATE_LIMIT = { max: 10, timeWindow: "1 minute" };
+
 export async function authRoutes(app: FastifyInstance) {
-  app.post("/auth/register", async (req, reply) => {
+  app.post("/auth/register", { config: { rateLimit: AUTH_RATE_LIMIT } }, async (req, reply) => {
     const parsed = registerInputSchema.safeParse(req.body);
     if (!parsed.success) {
       return reply.status(400).send({ data: null, error: parsed.error.flatten() });
@@ -19,7 +23,7 @@ export async function authRoutes(app: FastifyInstance) {
     }
   });
 
-  app.post("/auth/login", async (req, reply) => {
+  app.post("/auth/login", { config: { rateLimit: AUTH_RATE_LIMIT } }, async (req, reply) => {
     const parsed = loginInputSchema.safeParse(req.body);
     if (!parsed.success) {
       return reply.status(400).send({ data: null, error: parsed.error.flatten() });

@@ -83,6 +83,15 @@ export const moderationStatusEnum = pgEnum("moderation_status", [
 export const groupVisibilityEnum = pgEnum("group_visibility", ["public", "private"]);
 export const groupRoleEnum = pgEnum("group_role", ["owner", "member"]);
 
+// --- Nuevos enums Fase 8 (Escala) ----------------------------------------
+
+export const promotionStatusEnum = pgEnum("promotion_status", [
+  "pending_payment",
+  "active",
+  "ended",
+  "cancelled",
+]);
+
 /* ---------------------------------------------------------------------- */
 /* Identidad                                                                */
 /* ---------------------------------------------------------------------- */
@@ -519,59 +528,114 @@ export const reviews = pgTable("reviews", {
 /* Kōr nunca toca datos de tarjeta directamente (evita alcance PCI).        */
 /* ---------------------------------------------------------------------- */
 
-export const orders = pgTable("orders", {
-  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  buyerUserId: uuid("buyer_user_id")
-    .notNull()
-    .references(() => users.id),
-  businessId: uuid("business_id")
-    .notNull()
-    .references(() => businesses.id),
-  status: orderStatusEnum("status").notNull().default("pending_payment"),
-  subtotalCents: integer("subtotal_cents").notNull(),
-  platformFeeCents: integer("platform_fee_cents").notNull(),
-  totalCents: integer("total_cents").notNull(),
-  currency: varchar("currency", { length: 3 }).notNull().default("ARS"),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+export const orders = pgTable(
+  "orders",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    buyerUserId: uuid("buyer_user_id")
+      .notNull()
+      .references(() => users.id),
+    businessId: uuid("business_id")
+      .notNull()
+      .references(() => businesses.id),
+    status: orderStatusEnum("status").notNull().default("pending_payment"),
+    subtotalCents: integer("subtotal_cents").notNull(),
+    platformFeeCents: integer("platform_fee_cents").notNull(),
+    totalCents: integer("total_cents").notNull(),
+    currency: varchar("currency", { length: 3 }).notNull().default("ARS"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    buyerIdx: index("orders_buyer_idx").on(t.buyerUserId, t.createdAt),
+    businessIdx: index("orders_business_idx").on(t.businessId, t.createdAt),
+  })
+);
 
-export const orderItems = pgTable("order_items", {
-  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  orderId: uuid("order_id")
-    .notNull()
-    .references(() => orders.id, { onDelete: "cascade" }),
-  productId: uuid("product_id")
-    .notNull()
-    .references(() => products.id),
-  quantity: integer("quantity").notNull(),
-  unitPriceCents: integer("unit_price_cents").notNull(),
-});
+export const orderItems = pgTable(
+  "order_items",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    orderId: uuid("order_id")
+      .notNull()
+      .references(() => orders.id, { onDelete: "cascade" }),
+    productId: uuid("product_id")
+      .notNull()
+      .references(() => products.id),
+    quantity: integer("quantity").notNull(),
+    unitPriceCents: integer("unit_price_cents").notNull(),
+  },
+  (t) => ({
+    orderIdx: index("order_items_order_idx").on(t.orderId),
+  })
+);
 
-export const payments = pgTable("payments", {
-  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  orderId: uuid("order_id")
-    .notNull()
-    .references(() => orders.id, { onDelete: "cascade" }),
-  provider: varchar("provider", { length: 20 }).notNull().default("mercadopago"),
-  providerPaymentId: varchar("provider_payment_id", { length: 80 }),
-  status: paymentStatusEnum("status").notNull().default("pending"),
-  amountCents: integer("amount_cents").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+export const payments = pgTable(
+  "payments",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    orderId: uuid("order_id")
+      .notNull()
+      .references(() => orders.id, { onDelete: "cascade" }),
+    provider: varchar("provider", { length: 20 }).notNull().default("mercadopago"),
+    providerPaymentId: varchar("provider_payment_id", { length: 80 }),
+    status: paymentStatusEnum("status").notNull().default("pending"),
+    amountCents: integer("amount_cents").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    orderIdx: uniqueIndex("payments_order_idx").on(t.orderId),
+  })
+);
 
-export const payouts = pgTable("payouts", {
-  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  businessId: uuid("business_id")
-    .notNull()
-    .references(() => businesses.id),
-  orderId: uuid("order_id")
-    .notNull()
-    .references(() => orders.id),
-  status: payoutStatusEnum("status").notNull().default("pending"),
-  amountCents: integer("amount_cents").notNull(),
-  scheduledAt: timestamp("scheduled_at", { withTimezone: true }),
-  paidAt: timestamp("paid_at", { withTimezone: true }),
-});
+export const payouts = pgTable(
+  "payouts",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    businessId: uuid("business_id")
+      .notNull()
+      .references(() => businesses.id),
+    orderId: uuid("order_id")
+      .notNull()
+      .references(() => orders.id),
+    status: payoutStatusEnum("status").notNull().default("pending"),
+    amountCents: integer("amount_cents").notNull(),
+    scheduledAt: timestamp("scheduled_at", { withTimezone: true }),
+    paidAt: timestamp("paid_at", { withTimezone: true }),
+  },
+  (t) => ({
+    businessIdx: index("payouts_business_idx").on(t.businessId, t.scheduledAt),
+    statusIdx: index("payouts_status_idx").on(t.status, t.scheduledAt),
+  })
+);
+
+/**
+ * Promoción paga de un negocio o producto (Fase 8 — "publicidad contextual"
+ * del doc de arquitectura, P2). Deliberadamente no incluye posts: promocionar
+ * un post mezclaría la identidad de usuario con la de negocio, y el schema no
+ * tiene ese vínculo — solo negocio o producto, ambos ya ligados a `businesses`.
+ * Mismo circuito de pago mockeado que `orders` (ver payment-provider.ts).
+ */
+export const promotions = pgTable(
+  "promotions",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    businessId: uuid("business_id")
+      .notNull()
+      .references(() => businesses.id, { onDelete: "cascade" }),
+    targetType: varchar("target_type", { length: 20 }).notNull(), // business | product
+    targetId: uuid("target_id").notNull(),
+    status: promotionStatusEnum("status").notNull().default("pending_payment"),
+    budgetCents: integer("budget_cents").notNull(),
+    durationDays: integer("duration_days").notNull(),
+    startsAt: timestamp("starts_at", { withTimezone: true }),
+    endsAt: timestamp("ends_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    businessIdx: index("promotions_business_idx").on(t.businessId),
+    activeIdx: index("promotions_active_idx").on(t.status, t.endsAt),
+  })
+);
 
 /* ---------------------------------------------------------------------- */
 /* Búsqueda, recomendación, moderación                                      */
@@ -586,17 +650,31 @@ export const searchLogs = pgTable("search_logs", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const recommendations = pgTable("recommendations", {
-  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: uuid("user_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  targetType: varchar("target_type", { length: 20 }).notNull(),
-  targetId: uuid("target_id").notNull(),
-  reasonCode: varchar("reason_code", { length: 40 }).notNull(),
-  shownAt: timestamp("shown_at", { withTimezone: true }).notNull().defaultNow(),
-  dismissed: boolean("dismissed").notNull().default(false),
-});
+/**
+ * Log de impresiones del recomendador (Fase 8): cada post que entra en
+ * `for-you` inserta una fila acá con el motivo del ranking (`reasonCode`).
+ * `dismissed` es el feedback explícito "no me interesa" — excluye ese post
+ * de futuras corridas de `for-you` para ese usuario. También sirve de fuente
+ * para analíticas de alcance por creador (ver domains/analytics).
+ */
+export const recommendations = pgTable(
+  "recommendations",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    targetType: varchar("target_type", { length: 20 }).notNull(),
+    targetId: uuid("target_id").notNull(),
+    reasonCode: varchar("reason_code", { length: 40 }).notNull(),
+    shownAt: timestamp("shown_at", { withTimezone: true }).notNull().defaultNow(),
+    dismissed: boolean("dismissed").notNull().default(false),
+  },
+  (t) => ({
+    userTargetIdx: index("recommendations_user_target_idx").on(t.userId, t.targetType, t.targetId),
+    targetIdx: index("recommendations_target_idx").on(t.targetType, t.targetId),
+  })
+);
 
 export const reports = pgTable("reports", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),

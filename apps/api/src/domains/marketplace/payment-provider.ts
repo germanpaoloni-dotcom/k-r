@@ -7,7 +7,8 @@
  * tocar `orders.service.ts`.
  */
 export interface CreatePaymentInput {
-  orderId: string;
+  /** Id de la orden o promoción que origina el cobro — genérico a propósito, ver promotions.service.ts. */
+  referenceId: string;
   amountCents: number;
   currency: string;
 }
@@ -35,9 +36,9 @@ export class MockPaymentProvider implements PaymentProvider {
 
   async createPayment(input: CreatePaymentInput): Promise<CreatePaymentResult> {
     return {
-      providerPaymentId: `mock_${input.orderId}`,
+      providerPaymentId: `mock_${input.referenceId}`,
       status: "pending",
-      checkoutUrl: `/api/v1/payments/mock-checkout/${input.orderId}`,
+      checkoutUrl: `/api/v1/payments/mock-checkout/${input.referenceId}`,
     };
   }
 }

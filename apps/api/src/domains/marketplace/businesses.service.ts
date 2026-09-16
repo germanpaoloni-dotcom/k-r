@@ -2,6 +2,7 @@ import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db/index.js";
 import { businesses, locations, products } from "../../db/schema.js";
 import { firstOrThrow } from "../../db/utils.js";
+import { activePromotedBusinessIds } from "./promotions.service.js";
 
 export class MarketplaceError extends Error {
   constructor(
@@ -35,6 +36,7 @@ export interface BusinessDto {
   createdAt: string;
   location: { id: string; name: string; city: string } | null;
   productCount: number;
+  isPromoted: boolean;
 }
 
 const businessSelect = {
@@ -75,11 +77,14 @@ async function hydrateBusinesses(rows: BusinessRow[]): Promise<BusinessDto[]> {
   if (rows.length === 0) return [];
   const ids = rows.map((r) => r.id);
 
-  const counts = await db
-    .select({ businessId: products.businessId, count: sql<number>`count(*)::int` })
-    .from(products)
-    .where(inArray(products.businessId, ids))
-    .groupBy(products.businessId);
+  const [counts, promotedIds] = await Promise.all([
+    db
+      .select({ businessId: products.businessId, count: sql<number>`count(*)::int` })
+      .from(products)
+      .where(inArray(products.businessId, ids))
+      .groupBy(products.businessId),
+    activePromotedBusinessIds(),
+  ]);
   const countByBusiness = new Map(counts.map((c) => [c.businessId, c.count]));
 
   return rows.map((r) => ({
@@ -94,6 +99,7 @@ async function hydrateBusinesses(rows: BusinessRow[]): Promise<BusinessDto[]> {
     createdAt: r.createdAt.toISOString(),
     location: r.locationId ? { id: r.locationId, name: r.locationName!, city: r.locationCity! } : null,
     productCount: countByBusiness.get(r.id) ?? 0,
+    isPromoted: promotedIds.has(r.id),
   }));
 }
 
@@ -164,7 +170,10 @@ export async function listBusinesses(params: ListBusinessesParams = {}): Promise
   let query = baseQuery();
   const filtered = conditions.length ? query.where(and(...conditions)) : query;
   const rows = await filtered.orderBy(desc(businesses.createdAt)).limit(params.limit ?? 30);
-  return hydrateBusinesses(rows);
+  const dtos = await hydrateBusinesses(rows);
+  // Promocionados primero (Fase 8 — publicidad), siempre marcados con
+  // `isPromoted`, nunca mezclados de forma indistinguible de lo orgánico.
+  return dtos.sort((a, b) => Number(b.isPromoted) - Number(a.isPromoted));
 }
 
 export async function listMyBusinesses(userId: string, limit = 50): Promise<BusinessDto[]> {
