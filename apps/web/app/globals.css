@@ -62,13 +62,25 @@ body {
 .gossip-pet-anim-pop { animation: gossip-pet-pop 0.4s ease-out 1; }
 .gossip-pet-anim-bob { animation: gossip-pet-bob 2.4s ease-in-out infinite; }
 
+/* Arco de salto para las mascotas con sprites ilustrados reales (motor de
+   locomoción) — el eje X se anima aparte, vía transition en left/transform,
+   para poder moverse Y saltar al mismo tiempo sin pisarse. */
+@keyframes gossip-pet-hop-arc {
+  0% { transform: translateY(0); }
+  38% { transform: translateY(-52px); }
+  62% { transform: translateY(-52px); }
+  100% { transform: translateY(0); }
+}
+.gossip-pet-anim-hop { animation: gossip-pet-hop-arc 1.4s ease-in-out 1; }
+
 @media (prefers-reduced-motion: reduce) {
   .gossip-pet-anim-shake,
   .gossip-pet-anim-bounce,
   .gossip-pet-anim-sleepy,
   .gossip-pet-anim-sparkle,
   .gossip-pet-anim-pop,
-  .gossip-pet-anim-bob {
+  .gossip-pet-anim-bob,
+  .gossip-pet-anim-hop {
     animation: none !important;
   }
 }
