@@ -26,6 +26,8 @@ import {
   trainPet,
   listPetDefinitions,
   adoptPet,
+  switchPet,
+  renamePet,
 } from "./service.js";
 
 const createGameSchema = z.object({
@@ -59,6 +61,10 @@ const createPetSchema = z.object({
 
 const adoptPetSchema = z.object({
   definitionId: z.string().uuid(),
+});
+
+const renamePetSchema = z.object({
+  name: z.string().min(1).max(40),
 });
 
 function handleError(err: unknown, reply: FastifyReply) {
@@ -254,6 +260,31 @@ export async function playRoutes(app: FastifyInstance) {
     const { sub } = req.user as { sub: string };
     const pet = await getUserPet(sub);
     return reply.send({ data: pet, error: null });
+  });
+
+  // Panel de mascota — cambiar a otra del catálogo (reinicia nivel/xp).
+  app.post("/pets/mine/switch", { preHandler: app.authenticate }, async (req, reply) => {
+    const parsed = adoptPetSchema.safeParse(req.body);
+    if (!parsed.success) return reply.status(400).send({ data: null, error: parsed.error.flatten() });
+    const { sub } = req.user as { sub: string };
+    try {
+      const pet = await switchPet(sub, parsed.data.definitionId);
+      return reply.send({ data: pet, error: null });
+    } catch (err) {
+      return handleError(err, reply);
+    }
+  });
+
+  app.patch("/pets/mine", { preHandler: app.authenticate }, async (req, reply) => {
+    const parsed = renamePetSchema.safeParse(req.body);
+    if (!parsed.success) return reply.status(400).send({ data: null, error: parsed.error.flatten() });
+    const { sub } = req.user as { sub: string };
+    try {
+      const pet = await renamePet(sub, parsed.data.name);
+      return reply.send({ data: pet, error: null });
+    } catch (err) {
+      return handleError(err, reply);
+    }
   });
 
   app.post("/pets/:id/train", { preHandler: app.authenticate }, async (req, reply) => {

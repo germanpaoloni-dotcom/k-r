@@ -179,7 +179,7 @@ export default function MePage() {
         <h2 className="mb-2.5 font-display text-[11.5px] font-semibold uppercase tracking-[0.08em] text-text-muted">
           Tu mascota
         </h2>
-        {!petLoading && pet && <PetSummary pet={pet} />}
+        {!petLoading && pet && <PetSummary pet={pet} editable />}
         {!petLoading && !pet && petDefinitions.length > 0 && (
           <>
             <p className="mb-3 text-[12.5px] text-text-muted">

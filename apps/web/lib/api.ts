@@ -325,6 +325,14 @@ export function adoptPet(definitionId: string) {
   return authRequest<PetDto>("/pets/adopt", { method: "POST", body: JSON.stringify({ definitionId }) });
 }
 
+export function switchPet(definitionId: string) {
+  return authRequest<PetDto>("/pets/mine/switch", { method: "POST", body: JSON.stringify({ definitionId }) });
+}
+
+export function renamePet(name: string) {
+  return authRequest<PetDto>("/pets/mine", { method: "PATCH", body: JSON.stringify({ name }) });
+}
+
 /* ---------------------------------------------------------------------- */
 /* Subida de archivos (foto/video desde la PC o el celular)                */
 /* ---------------------------------------------------------------------- */

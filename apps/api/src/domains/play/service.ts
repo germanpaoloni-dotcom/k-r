@@ -434,6 +434,42 @@ export async function adoptPet(userId: string, definitionId: string) {
   return { ...pet, definition };
 }
 
+/**
+ * Panel de mascota: cambiar a otra del catálogo. A diferencia de `adoptPet`
+ * (que exige no tener ninguna), esto reemplaza la que ya tenías — nivel y xp
+ * arrancan de nuevo, como una adopción nueva.
+ */
+export async function switchPet(userId: string, definitionId: string) {
+  const [definition] = await db.select().from(petDefinitions).where(eq(petDefinitions.id, definitionId));
+  if (!definition) throw new PlayError(404, "Esa mascota no existe en el catálogo.");
+
+  await db.delete(pets).where(and(eq(pets.ownerType, "user"), eq(pets.ownerId, userId)));
+  const pet = firstOrThrow(
+    await db
+      .insert(pets)
+      .values({
+        ownerType: "user",
+        ownerId: userId,
+        species: definition.species,
+        name: definition.name,
+        definitionId: definition.id,
+      })
+      .returning()
+  );
+  return { ...pet, definition };
+}
+
+export async function renamePet(userId: string, name: string) {
+  const [existing] = await db
+    .select()
+    .from(pets)
+    .where(and(eq(pets.ownerType, "user"), eq(pets.ownerId, userId)));
+  if (!existing) throw new PlayError(404, "Todavía no tenés una mascota.");
+
+  const [updated] = await db.update(pets).set({ name }).where(eq(pets.id, existing.id)).returning();
+  return hydratePetDefinition(updated!);
+}
+
 async function hydratePetDefinition(pet: typeof pets.$inferSelect) {
   if (!pet.definitionId) return { ...pet, definition: null };
   const [definition] = await db.select().from(petDefinitions).where(eq(petDefinitions.id, pet.definitionId));

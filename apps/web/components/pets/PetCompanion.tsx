@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getMyPet, type PetDto } from "../../lib/api";
-import { petEmoji } from "../../lib/pets/emoji";
+import { PetAvatar } from "./PetAvatar";
 import { interactionFor, type GagFamily } from "../../lib/pets/interactions";
+import type { PetMood } from "./illustrations/PetIllustration";
 
 // Placeholder de balance — "fundacional" a propósito, se ajusta con datos
 // reales de uso más adelante. Corto para que se pueda ver en una demo en vivo.
@@ -13,19 +14,30 @@ const TAP_DEBOUNCE_MS = 3_000;
 const MESS_AUTOCLEAR_MS = 15_000;
 
 const GAG_DURATION_MS: Record<GagFamily, number> = {
-  shake: 1300,
-  bounce: 1500,
-  sleepy: 1900,
-  sparkle: 1700,
-  speech: 2600,
-  mess: 400, // solo la animación de "aparición" — el residuo queda hasta que lo tocás
+  shake: 1600,
+  bounce: 1700,
+  sleepy: 2200,
+  sparkle: 1900,
+  speech: 2800,
+  mess: 2800, // el ícono queda pegado más tiempo, pero el toast de texto se cierra igual que el resto
 };
 
-const ANIM_CLASS: Record<Exclude<GagFamily, "mess" | "speech">, string> = {
+const ANIM_CLASS: Record<GagFamily, string | null> = {
   shake: "gossip-pet-anim-shake",
   bounce: "gossip-pet-anim-bounce",
   sleepy: "gossip-pet-anim-sleepy",
   sparkle: "gossip-pet-anim-sparkle",
+  speech: "gossip-pet-anim-bounce",
+  mess: null,
+};
+
+const MOOD_DURING_GAG: Record<GagFamily, PetMood | undefined> = {
+  shake: "surprised",
+  bounce: "happy",
+  sleepy: "sleepy",
+  sparkle: "happy",
+  speech: "surprised",
+  mess: "surprised",
 };
 
 function cooldownKey(petId: string) {
@@ -94,10 +106,9 @@ export function PetCompanion() {
     []
   );
 
-  if (!pet) return null;
+  if (!pet || !pet.definition) return null;
 
-  const config = interactionFor(pet.definition?.key ?? "");
-  const emoji = petEmoji(pet.definition?.key ?? "", pet.species);
+  const config = interactionFor(pet.definition.key);
 
   function onTap() {
     if (messVisible) {
@@ -111,24 +122,24 @@ export function PetCompanion() {
     playGag(config.family);
   }
 
-  const bubbleAnimClass =
-    activeFamily && activeFamily !== "mess" && activeFamily !== "speech" ? ANIM_CLASS[activeFamily] : "gossip-pet-anim-bob";
+  const animClass = activeFamily ? ANIM_CLASS[activeFamily] : "gossip-pet-anim-bob";
+  const mood = activeFamily ? MOOD_DURING_GAG[activeFamily] : undefined;
 
   return (
     <div className="fixed bottom-[104px] right-4 z-10 flex flex-col items-end gap-1.5">
-      {activeFamily === "speech" && (
-        <div className="gossip-pet-anim-pop max-w-[160px] rounded-2xl rounded-br-sm bg-white px-3 py-2 text-[12px] font-medium text-text shadow-md ring-1 ring-border">
+      {activeFamily && (
+        <div className="gossip-pet-anim-pop max-w-[170px] rounded-2xl rounded-br-sm bg-white px-3 py-2 text-[12px] font-medium text-text shadow-md ring-1 ring-border">
           {config.line}
         </div>
       )}
       <button
         onClick={onTap}
         aria-label={`Tu mascota: ${config.line}`}
-        className={`relative flex h-12 w-12 items-center justify-center rounded-full bg-surface text-[24px] shadow-md ring-1 ring-border ${bubbleAnimClass}`}
+        className={`relative flex items-center justify-center rounded-full bg-surface shadow-md ring-1 ring-border ${animClass ?? ""}`}
       >
-        {emoji}
+        <PetAvatar species={pet.species} petKey={pet.definition.key} size={68} mood={mood} />
         {messVisible && (
-          <span className="gossip-pet-anim-pop absolute -left-1.5 -top-1.5 text-[18px]">{config.emoji}</span>
+          <span className="gossip-pet-anim-pop absolute -left-2 -top-2 text-[20px]">{config.emoji}</span>
         )}
       </button>
     </div>
