@@ -5,10 +5,12 @@ import rateLimit from "@fastify/rate-limit";
 import sensible from "@fastify/sensible";
 import multipart from "@fastify/multipart";
 import fastifyStatic from "@fastify/static";
+import websocket from "@fastify/websocket";
 import { mkdirSync } from "fs";
 import { config } from "./config.js";
 import { UPLOAD_DIR } from "./domains/uploads/service.js";
 import authenticate from "./plugins/authenticate.js";
+import { registerSocket, unregisterSocket } from "./realtime/hub.js";
 import { authRoutes } from "./domains/auth/routes.js";
 import { usersRoutes } from "./domains/users/routes.js";
 import { socialRoutes } from "./domains/social/routes.js";
@@ -56,8 +58,31 @@ export async function buildApp() {
   // externo todavía, disco local del servidor alcanza para el dev actual.
   mkdirSync(UPLOAD_DIR, { recursive: true });
   await app.register(fastifyStatic, { root: UPLOAD_DIR, prefix: "/uploads/" });
+  await app.register(websocket);
 
   app.get("/health", async () => ({ status: "ok", service: "@gossip/api" }));
+
+  // Push en tiempo real (notificaciones, badge de mensajes sin leer). El
+  // browser no puede mandar el header Authorization al abrir un WebSocket,
+  // así que el access token viaja como query param acá — solo para este
+  // handshake, nunca se loguea ni se reenvía a otro lado.
+  app.get("/api/v1/realtime", { websocket: true }, (socket, req) => {
+    const token = (req.query as { token?: string }).token;
+    if (!token) {
+      socket.close(4001, "Falta el token.");
+      return;
+    }
+    let userId: string;
+    try {
+      const decoded = app.jwt.verify<{ sub: string }>(token);
+      userId = decoded.sub;
+    } catch {
+      socket.close(4001, "Token inválido.");
+      return;
+    }
+    registerSocket(userId, socket);
+    socket.on("close", () => unregisterSocket(userId, socket));
+  });
 
   await app.register(authRoutes, { prefix: "/api/v1" });
   await app.register(usersRoutes, { prefix: "/api/v1" });

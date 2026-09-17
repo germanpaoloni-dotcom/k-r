@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
 export interface ApiEnvelope<T> {
   data: T | null;
@@ -402,6 +402,31 @@ export function reactToMiraEsto(id: string) {
 
 export function unreactToMiraEsto(id: string) {
   return authRequest<null>(`/mira-esto/${id}/react`, { method: "DELETE" });
+}
+
+/* ---------------------------------------------------------------------- */
+/* Notificaciones                                                           */
+/* ---------------------------------------------------------------------- */
+
+export interface NotificationDto {
+  id: string;
+  type: string;
+  payload: Record<string, unknown>;
+  readAt: string | null;
+  createdAt: string;
+  actor: { id: string; username: string; displayName: string; avatarUrl: string | null } | null;
+}
+
+export function getNotifications() {
+  return authRequest<{ items: NotificationDto[]; unreadCount: number }>("/notifications");
+}
+
+export function markNotificationRead(id: string) {
+  return authRequest<null>(`/notifications/${id}/read`, { method: "POST" });
+}
+
+export function markAllNotificationsRead() {
+  return authRequest<null>("/notifications/read-all", { method: "POST" });
 }
 
 /* ---------------------------------------------------------------------- */

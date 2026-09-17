@@ -1,7 +1,8 @@
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull } from "drizzle-orm";
 import { db } from "../../db/index.js";
-import { notifications, notificationPreferences } from "../../db/schema.js";
+import { notifications, notificationPreferences, users } from "../../db/schema.js";
 import { firstOrThrow } from "../../db/utils.js";
+import { pushToUser } from "../../realtime/hub.js";
 
 export type NotificationType =
   | "follow"
@@ -47,6 +48,64 @@ const defaultPreferences = {
   digest: true,
 };
 
+// Qué campo del payload identifica a "quién generó esto" — para hidratar un
+// avatar/nombre sin que cada dominio tenga que mandar el mismo dato con
+// nombres distintos.
+const ACTOR_FIELD_BY_TYPE: Partial<Record<NotificationType, string>> = {
+  follow: "followerId",
+  friend_request: "requesterId",
+  friend_accept: "addresseeId",
+  like: "fromUserId",
+  comment: "fromUserId",
+  mira_esto_reaction: "fromUserId",
+  share: "fromUserId",
+  message: "senderId",
+  group_join: "fromUserId",
+};
+
+export interface NotificationDto {
+  id: string;
+  type: NotificationType;
+  payload: Record<string, unknown>;
+  readAt: string | null;
+  createdAt: string;
+  actor: { id: string; username: string; displayName: string; avatarUrl: string | null } | null;
+}
+
+async function hydrate(
+  rows: { id: string; type: string; payload: unknown; readAt: Date | null; createdAt: Date }[]
+): Promise<NotificationDto[]> {
+  const actorIds = rows
+    .map((r) => {
+      const field = ACTOR_FIELD_BY_TYPE[r.type as NotificationType];
+      const payload = r.payload as Record<string, unknown>;
+      return field ? (payload[field] as string | undefined) : undefined;
+    })
+    .filter((id): id is string => Boolean(id));
+
+  const actors = actorIds.length
+    ? await db
+        .select({ id: users.id, username: users.username, displayName: users.displayName, avatarUrl: users.avatarUrl })
+        .from(users)
+        .where(inArray(users.id, [...new Set(actorIds)]))
+    : [];
+  const actorById = new Map(actors.map((a) => [a.id, a]));
+
+  return rows.map((r) => {
+    const field = ACTOR_FIELD_BY_TYPE[r.type as NotificationType];
+    const payload = r.payload as Record<string, unknown>;
+    const actorId = field ? (payload[field] as string | undefined) : undefined;
+    return {
+      id: r.id,
+      type: r.type as NotificationType,
+      payload,
+      readAt: r.readAt ? r.readAt.toISOString() : null,
+      createdAt: r.createdAt.toISOString(),
+      actor: actorId ? actorById.get(actorId) ?? null : null,
+    };
+  });
+}
+
 async function getPreferences(userId: string) {
   const [row] = await db
     .select()
@@ -72,16 +131,23 @@ export async function notify(
     const prefs = await getPreferences(userId);
     if (!prefs[prefKey]) return;
   }
-  await db.insert(notifications).values({ userId, type, payload });
+  const row = firstOrThrow(await db.insert(notifications).values({ userId, type, payload }).returning());
+
+  // Push en tiempo real — si el usuario no tiene un socket abierto esto es
+  // un no-op (pushToUser revisa el registro en memoria y listo).
+  const [dto] = await hydrate([row]);
+  const unread = await unreadCount(userId);
+  pushToUser(userId, { kind: "notification", notification: dto, unreadCount: unread });
 }
 
 export async function listNotifications(userId: string, limit = 30) {
-  return db
+  const rows = await db
     .select()
     .from(notifications)
     .where(eq(notifications.userId, userId))
     .orderBy(desc(notifications.createdAt))
     .limit(limit);
+  return hydrate(rows);
 }
 
 export async function unreadCount(userId: string) {

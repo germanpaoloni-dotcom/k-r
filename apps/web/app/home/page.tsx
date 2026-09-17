@@ -8,6 +8,7 @@ import { SlidersIcon, SearchIcon } from "../../components/icons";
 import { PostCard } from "../../components/PostCard";
 import { BottomNav } from "../../components/BottomNav";
 import { MiraEstoBar } from "../../components/MiraEstoBar";
+import { NotificationBell } from "../../components/NotificationBell";
 import { getSession, getFeed, me, type FeedTab, type PostDto, type UserPublic } from "../../lib/api";
 
 const SUB_TABS: { id: FeedTab; label: string }[] = [
@@ -111,6 +112,7 @@ function HomeContent() {
           <button onClick={() => setShowFilters((v) => !v)} aria-label="Filtros de feed">
             <SlidersIcon size={21} className={showFilters ? "text-accent" : "text-text"} />
           </button>
+          <NotificationBell />
           {user && (
             <Link href="/me">
               <Avatar seed={user.username} src={user.avatarUrl} size={30} />

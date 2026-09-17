@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { HomeIcon, UsersIcon, CommentIcon, FlameIcon, PlusIcon } from "./icons";
 import { getConversations } from "../lib/api";
+import { subscribeRealtime } from "../lib/realtime";
 
 interface NavItem {
   href: string;
@@ -56,9 +57,15 @@ function BottomNavInner() {
   const [unread, setUnread] = useState(0);
 
   useEffect(() => {
-    getConversations().then((res) => {
-      const total = (res.data ?? []).reduce((sum, c) => sum + c.unreadCount, 0);
-      setUnread(total);
+    function refreshUnread() {
+      getConversations().then((res) => {
+        const total = (res.data ?? []).reduce((sum, c) => sum + c.unreadCount, 0);
+        setUnread(total);
+      });
+    }
+    refreshUnread();
+    return subscribeRealtime((event) => {
+      if (event.kind === "notification") refreshUnread();
     });
   }, [pathname]);
 
