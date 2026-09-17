@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Avatar } from "@gossip/ui";
 import { HeartIcon, HeartFilledIcon, XIcon, TrashIcon } from "../../../components/icons";
+import { OrbBubble } from "../../../components/OrbBubble";
 import {
   getSession,
   getMiraEstoFeed,
@@ -14,19 +15,32 @@ import {
   me,
   type MiraEstoDto,
 } from "../../../lib/api";
+import { markOrbesSeen } from "../../../lib/orbes/seen";
 
 const ITEM_DURATION_MS = 6000;
 
 export default function MiraEstoViewerPage() {
+  return (
+    <Suspense fallback={<main className="flex min-h-screen items-center justify-center bg-black text-white">Cargando…</main>}>
+      <ViewerContent />
+    </Suspense>
+  );
+}
+
+function ViewerContent() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
+  const searchParams = useSearchParams();
 
   const [ownId, setOwnId] = useState<string | null>(null);
-  const [items, setItems] = useState<MiraEstoDto[] | null>(null);
+  const [allItems, setAllItems] = useState<MiraEstoDto[] | null>(null);
+  const [currentAuthorId, setCurrentAuthorId] = useState<string | null>(null);
+  const [queueIds, setQueueIds] = useState<string[]>([]);
   const [index, setIndex] = useState(0);
   const [progress, setProgress] = useState(0);
   const [paused, setPaused] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [nextAuthor, setNextAuthor] = useState<MiraEstoDto["author"] | null>(null);
 
   const startRef = useRef<number>(0);
   const elapsedRef = useRef<number>(0);
@@ -42,31 +56,83 @@ export default function MiraEstoViewerPage() {
     });
     getMiraEstoFeed().then((res) => {
       const all = res.data ?? [];
+      setAllItems(all);
+
       const target = all.find((it) => it.id === params.id);
-      const group = target ? all.filter((it) => it.author.id === target.author.id) : [];
-      setItems(group);
+      const authorId = target?.author.id ?? null;
+      setCurrentAuthorId(authorId);
+
+      const group = authorId ? all.filter((it) => it.author.id === authorId) : [];
       const startIndex = group.findIndex((it) => it.id === params.id);
       setIndex(startIndex >= 0 ? startIndex : 0);
+      if (group.length > 0) markOrbesSeen(group.map((it) => it.id));
+
+      const queueParam = searchParams.get("queue");
+      if (queueParam) {
+        setQueueIds(queueParam.split(",").filter(Boolean));
+      } else {
+        // Sin queue explícita (llegaste por link directo) — arma una a partir
+        // del orden de aparición en el feed, un id por autor.
+        const seenAuthors = new Set<string>();
+        const order: string[] = [];
+        for (const it of all) {
+          if (!seenAuthors.has(it.author.id)) {
+            seenAuthors.add(it.author.id);
+            order.push(it.author.id);
+          }
+        }
+        setQueueIds(order);
+      }
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id, router]);
 
-  const current = items && items.length > 0 ? items[index] : null;
-
-  const close = () => router.push("/home");
-
-  const goNext = useMemo(
-    () => () => {
-      if (!items) return;
-      if (index >= items.length - 1) {
-        close();
-        return;
-      }
-      setIndex((i) => i + 1);
-      setProgress(0);
-      elapsedRef.current = 0;
-    },
-    [items, index]
+  const items = useMemo(
+    () => (allItems && currentAuthorId ? allItems.filter((it) => it.author.id === currentAuthorId) : []),
+    [allItems, currentAuthorId]
   );
+  const current = items.length > 0 ? items[index] : null;
+
+  const close = useCallback(() => router.push("/home"), [router]);
+
+  const goToNextAuthor = useCallback(() => {
+    if (!currentAuthorId || !allItems) {
+      close();
+      return;
+    }
+    const pos = queueIds.indexOf(currentAuthorId);
+    const nextId = pos >= 0 ? queueIds[pos + 1] : undefined;
+    const nextGroup = nextId ? allItems.filter((it) => it.author.id === nextId) : [];
+    if (!nextId || nextGroup.length === 0) {
+      close();
+      return;
+    }
+    setPaused(true);
+    setNextAuthor(nextGroup[0]!.author);
+  }, [currentAuthorId, allItems, queueIds, close]);
+
+  function confirmNextAuthor() {
+    if (!nextAuthor || !allItems) return;
+    const nextGroup = allItems.filter((it) => it.author.id === nextAuthor.id);
+    markOrbesSeen(nextGroup.map((it) => it.id));
+    setCurrentAuthorId(nextAuthor.id);
+    setIndex(0);
+    setProgress(0);
+    elapsedRef.current = 0;
+    setNextAuthor(null);
+    setPaused(false);
+  }
+
+  const goNext = useCallback(() => {
+    if (items.length === 0) return;
+    if (index >= items.length - 1) {
+      goToNextAuthor();
+      return;
+    }
+    setIndex((i) => i + 1);
+    setProgress(0);
+    elapsedRef.current = 0;
+  }, [items, index, goToNextAuthor]);
 
   function goPrev() {
     if (index === 0) return;
@@ -76,7 +142,7 @@ export default function MiraEstoViewerPage() {
   }
 
   useEffect(() => {
-    if (!current || paused) return;
+    if (!current || paused || nextAuthor) return;
     startRef.current = Date.now() - elapsedRef.current;
     const tick = setInterval(() => {
       elapsedRef.current = Date.now() - startRef.current;
@@ -86,15 +152,15 @@ export default function MiraEstoViewerPage() {
     }, 60);
     return () => clearInterval(tick);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [current?.id, paused]);
+  }, [current?.id, paused, nextAuthor]);
 
   async function toggleReact() {
     if (!current) return;
     const next = !current.reactedByMe;
-    setItems((prev) =>
+    setAllItems((prev) =>
       prev
-        ? prev.map((it, i) =>
-            i === index
+        ? prev.map((it) =>
+            it.id === current.id
               ? { ...it, reactedByMe: next, reactionCount: it.reactionCount + (next ? 1 : -1) }
               : it
           )
@@ -108,11 +174,11 @@ export default function MiraEstoViewerPage() {
     setBusy(true);
     await deleteMiraEsto(current.id);
     setBusy(false);
-    if (items && items.length <= 1) {
-      close();
+    if (items.length <= 1) {
+      goToNextAuthor();
       return;
     }
-    setItems((prev) => (prev ? prev.filter((it) => it.id !== current.id) : prev));
+    setAllItems((prev) => (prev ? prev.filter((it) => it.id !== current.id) : prev));
     setProgress(0);
     elapsedRef.current = 0;
   }
@@ -125,9 +191,32 @@ export default function MiraEstoViewerPage() {
     if (res.data) router.push(`/p/${res.data.id}`);
   }
 
-  if (items === null) {
+  if (allItems === null) {
     return <main className="flex min-h-screen items-center justify-center bg-black text-white">Cargando…</main>;
   }
+
+  if (nextAuthor) {
+    return (
+      <main className="relative mx-auto flex min-h-screen max-w-lg flex-col items-center justify-center gap-4 bg-black px-8 text-center text-white">
+        <p className="text-[13px] text-white/60">
+          {current ? `Ya viste todo de ${current.author.displayName}` : "Seguiste avanzando"}
+        </p>
+        <OrbBubble
+          avatarSeed={nextAuthor.username}
+          avatarSrc={nextAuthor.avatarUrl}
+          size={88}
+          label={`Romper el Orbe de ${nextAuthor.displayName}`}
+          onOpen={confirmNextAuthor}
+        />
+        <p className="font-display text-[16px] font-semibold">{nextAuthor.displayName}</p>
+        <p className="text-[12px] text-white/50">Tocá el Orbe para seguir</p>
+        <button onClick={close} className="mt-6 text-[13px] text-white/50">
+          Salir
+        </button>
+      </main>
+    );
+  }
+
   if (!current) {
     return (
       <main className="flex min-h-screen flex-col items-center justify-center gap-3 bg-black text-white">

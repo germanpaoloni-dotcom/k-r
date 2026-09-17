@@ -50,7 +50,13 @@ export async function buildApp() {
   // un túnel temporal) — @fastify/cors acepta un array de orígenes nativo.
   const webOrigins = config.WEB_ORIGIN.split(",").map((o) => o.trim());
   await app.register(cors, { origin: webOrigins, credentials: true });
-  await app.register(rateLimit, { max: 100, timeWindow: "1 minute" });
+  // En desarrollo el propio front-end ya genera bastante tráfico (polling de
+  // notificaciones/mensajes, varias pestañas de prueba a la vez) — un límite
+  // pensado para producción lo dispara solo. Se mantiene estricto fuera de dev.
+  await app.register(rateLimit, {
+    max: config.NODE_ENV === "development" ? 2000 : 100,
+    timeWindow: "1 minute",
+  });
   await app.register(jwt, { secret: config.JWT_ACCESS_SECRET });
   await app.register(authenticate);
   await app.register(multipart, { limits: { fileSize: 25 * 1024 * 1024 } });

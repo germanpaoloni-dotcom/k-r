@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { PlusIcon } from "./icons";
 import { OrbBubble } from "./OrbBubble";
 import { getMiraEstoFeed, getActivityState, getSession, me, type MiraEstoDto } from "../lib/api";
+import { allOrbesSeen } from "../lib/orbes/seen";
 
 interface Group {
   author: MiraEstoDto["author"];
@@ -46,7 +47,10 @@ export function OrbesBar() {
   if (loading) return null;
 
   const ownGroup = ownId ? groups.find((g) => g.author.id === ownId) : undefined;
-  const otherGroups = groups.filter((g) => g.author.id !== ownId);
+  // Los que ya viste por completo desaparecen de la barra — si esa persona
+  // publica algo nuevo, vuelve a aparecer sola (allOrbesSeen mira item por item).
+  const otherGroups = groups.filter((g) => g.author.id !== ownId && !allOrbesSeen(g.items.map((it) => it.id)));
+  const queue = otherGroups.map((g) => g.author.id).join(",");
 
   return (
     <div className="flex gap-3.5 overflow-x-auto px-4 pb-1 pt-3.5" style={{ scrollbarWidth: "none" }}>
@@ -77,7 +81,7 @@ export function OrbesBar() {
             avatarSrc={g.author.avatarUrl}
             activityState={g.activityState}
             label={`Orbe de ${g.author.displayName}`}
-            onOpen={() => router.push(`/mira-esto/${g.items[0]!.id}`)}
+            onOpen={() => router.push(`/mira-esto/${g.items[0]!.id}?queue=${encodeURIComponent(queue)}`)}
           />
           <span className="max-w-[60px] truncate text-[10.5px] text-text-muted">{g.author.username}</span>
         </div>
