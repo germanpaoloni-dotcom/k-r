@@ -223,6 +223,7 @@ export function PetCompanion() {
               size={WIDGET_SIZE}
               useRealArt
               petKey={pet.definition.key}
+              pose={pose}
             />
             {messVisible && (
               <span className="gossip-pet-anim-pop absolute -left-1 -top-1 text-[20px]">{config.emoji}</span>

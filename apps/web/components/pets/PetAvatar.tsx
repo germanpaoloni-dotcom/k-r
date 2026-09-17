@@ -1,19 +1,32 @@
 import { ILLUSTRATION_BY_SPECIES, type PetMood } from "./illustrations/PetIllustration";
 import { themeFor } from "../../lib/pets/theme";
 import { hasSprite, spriteUrl } from "../../lib/pets/sprites";
-import { hasCosmeticArt, cosmeticArtUrl, COSMETIC_PLACEMENT } from "../../lib/pets/cosmeticArt";
-import { anchorOffsetFor } from "../../lib/pets/cosmeticAnchors";
+import { hasCosmeticArt, cosmeticArtUrl, COSMETIC_PLACEMENT, anchorYPctFor } from "../../lib/pets/cosmeticArt";
+import { anchorOffsetFor, type PetPose } from "../../lib/pets/cosmeticAnchors";
 import type { PetDto, PetCosmeticDto } from "../../lib/api";
 
-function CosmeticImage({ item, size, petKey }: { item: PetCosmeticDto; size: number; petKey: string }) {
+function CosmeticImage({
+  item,
+  size,
+  petKey,
+  pose,
+}: {
+  item: PetCosmeticDto;
+  size: number;
+  petKey: string;
+  pose: PetPose;
+}) {
   const placement = COSMETIC_PLACEMENT[item.slot];
   let transform = "translateX(-50%)";
   if (placement.anchor === "bottom") transform += " translateY(-100%)";
   else if (placement.anchor === "center") transform += " translateY(-50%)";
   // Corrige el centrado horizontal por mascota — en poses de costado (cuerpo
-  // alargado) el centro de la cabeza/torso no coincide con el centro del
-  // lienzo entero. Ver scripts/calibrate-pet-anchors.mjs.
-  const offsetPct = anchorOffsetFor(petKey, placement.offsetKind);
+  // alargado) o de movimiento el centro de la cabeza/torso no coincide con
+  // el centro geométrico de todo el sprite. Ver scripts/calibrate-pet-anchors.mjs.
+  const offsetPct = anchorOffsetFor(petKey, placement.offsetKind, pose);
+  // El gorro/anteojos además necesitan la posición vertical por pose (una
+  // pose agachada puede tener la cabeza mucho más abajo que de pie).
+  const anchorYPct = anchorYPctFor(item.slot, petKey, pose);
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
@@ -23,7 +36,7 @@ function CosmeticImage({ item, size, petKey }: { item: PetCosmeticDto; size: num
       className="absolute"
       style={{
         left: `calc(50% + ${offsetPct * 100}%)`,
-        top: placement.anchorYPct * size,
+        top: anchorYPct * size,
         width: size * placement.widthPct,
         height: "auto",
         transform,
@@ -52,6 +65,7 @@ export function PetCosmeticsOverlay({
   size,
   useRealArt = false,
   petKey = "",
+  pose = "idle",
 }: {
   equipped?: PetDto["equipped"];
   size: number;
@@ -59,6 +73,9 @@ export function PetCosmeticsOverlay({
    * posición de los accesorios calibrada — el resto sigue con emoji. */
   useRealArt?: boolean;
   petKey?: string;
+  /** Pose actual del sprite (PetAvatar siempre usa "idle"; el widget animado
+   * de PetCompanion pasa la pose real para que gorro/anteojos la sigan). */
+  pose?: PetPose;
 }) {
   if (!equipped) return null;
   const items = [equipped.hat, equipped.glasses, equipped.outfit].filter(
@@ -68,7 +85,7 @@ export function PetCosmeticsOverlay({
     <>
       {items.map((item) =>
         useRealArt && hasCosmeticArt(item.key) ? (
-          <CosmeticImage key={item.slot} item={item} size={size} petKey={petKey} />
+          <CosmeticImage key={item.slot} item={item} size={size} petKey={petKey} pose={pose} />
         ) : (
           <CosmeticEmoji key={item.slot} item={item} size={size} />
         )
