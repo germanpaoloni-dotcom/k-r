@@ -12,7 +12,8 @@
     "cleanup:mira-esto": "tsx src/scripts/cleanup-mira-esto.ts",
     "settle:payouts": "tsx src/scripts/settle-payouts.ts",
     "seed:demo-contacts": "tsx src/scripts/seed-demo-contacts.ts",
-    "unseed:demo-contacts": "tsx src/scripts/unseed-demo-contacts.ts"
+    "unseed:demo-contacts": "tsx src/scripts/unseed-demo-contacts.ts",
+    "seed:demo-orbes": "tsx src/scripts/seed-demo-orbes.ts"
   },
   "dependencies": {
     "@fastify/cors": "^10.0.1",
