@@ -138,6 +138,14 @@ export function ImageIcon(props: IconProps) {
   );
 }
 
+export function TrashIcon(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path d="M4 7h16M9 7V4.8c0-.44.36-.8.8-.8h4.4c.44 0 .8.36.8.8V7m-8 0 .7 12.3a2 2 0 0 0 2 1.7h3.6a2 2 0 0 0 2-1.7L17 7" />
+    </svg>
+  );
+}
+
 export function InfoIcon(props: IconProps) {
   return (
     <svg {...base(props)}>

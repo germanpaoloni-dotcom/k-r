@@ -1,11 +1,20 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeftIcon, MapPinIcon, XIcon, ImageIcon } from "../../components/icons";
-import { getSession, createPost, searchLocations, uploadFile, type LocationDto, type UploadResult } from "../../lib/api";
+import {
+  getSession,
+  createPost,
+  createMiraEsto,
+  searchLocations,
+  uploadFile,
+  type LocationDto,
+  type UploadResult,
+} from "../../lib/api";
 
 type Visibility = "public" | "followers" | "private";
+type Mode = "post" | "mira-esto";
 
 const VISIBILITY_OPTIONS: { id: Visibility; label: string }[] = [
   { id: "public", label: "Público" },
@@ -13,9 +22,20 @@ const VISIBILITY_OPTIONS: { id: Visibility; label: string }[] = [
   { id: "private", label: "Privado" },
 ];
 
-export default function CreatePostPage() {
+export default function CreatePage() {
+  return (
+    <Suspense fallback={null}>
+      <CreateContent />
+    </Suspense>
+  );
+}
+
+function CreateContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [mode, setMode] = useState<Mode>(searchParams.get("mode") === "mira-esto" ? "mira-esto" : "post");
 
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [upload, setUpload] = useState<UploadResult | null>(null);
@@ -69,7 +89,7 @@ export default function CreatePostPage() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
-  async function onSubmit() {
+  async function onSubmitPost() {
     setError(null);
     if (!upload) {
       setError("Subí una foto o video para publicar.");
@@ -90,7 +110,30 @@ export default function CreatePostPage() {
     router.push(`/p/${res.data.id}`);
   }
 
-  const canSubmit = Boolean(upload) && !loading && !uploading;
+  async function onSubmitMiraEsto() {
+    setError(null);
+    const text = caption.trim();
+    if (!upload && !text) {
+      setError("Agregá una foto, un video o un texto.");
+      return;
+    }
+    setLoading(true);
+    const res = await createMiraEsto({
+      contentType: upload && text ? "mixed" : upload ? "media" : "text",
+      text: text || undefined,
+      media: upload ? { type: upload.type, url: upload.url } : undefined,
+      locationId: location?.id,
+    });
+    setLoading(false);
+    if (res.error || !res.data) {
+      setError(res.error?.message ?? "No pudimos publicar Mirá esto.");
+      return;
+    }
+    router.push(`/mira-esto/${res.data.id}`);
+  }
+
+  const canSubmitPost = Boolean(upload) && !loading && !uploading;
+  const canSubmitMiraEsto = (Boolean(upload) || caption.trim().length > 0) && !loading && !uploading;
 
   return (
     <main className="mx-auto min-h-screen max-w-lg">
@@ -98,19 +141,45 @@ export default function CreatePostPage() {
         <button onClick={() => router.back()} aria-label="Cancelar">
           <ChevronLeftIcon size={22} />
         </button>
-        <span className="font-display text-[15px] font-semibold">Nuevo post</span>
+        <span className="font-display text-[15px] font-semibold">Crear</span>
         <button
-          onClick={onSubmit}
-          disabled={!canSubmit}
+          onClick={mode === "post" ? onSubmitPost : onSubmitMiraEsto}
+          disabled={mode === "post" ? !canSubmitPost : !canSubmitMiraEsto}
           className="rounded-full bg-accent px-3.5 py-1.5 text-[13.5px] font-semibold text-white disabled:opacity-40"
         >
           {loading ? "Publicando…" : "Publicar"}
         </button>
       </div>
 
+      <div className="flex gap-1 px-4 pt-3.5">
+        <button
+          onClick={() => setMode("post")}
+          className={`flex-1 rounded-full py-2 font-display text-[13px] font-medium ${
+            mode === "post" ? "bg-accent-soft text-accent" : "text-text-muted"
+          }`}
+        >
+          Post
+        </button>
+        <button
+          onClick={() => setMode("mira-esto")}
+          className={`flex-1 rounded-full py-2 font-display text-[13px] font-medium ${
+            mode === "mira-esto" ? "bg-accent-soft text-accent" : "text-text-muted"
+          }`}
+        >
+          Mirá esto
+        </button>
+      </div>
+      {mode === "mira-esto" && (
+        <p className="px-4 pt-2 text-[12px] text-text-muted">
+          Se muestra 24 horas a tu gente y después desaparece.
+        </p>
+      )}
+
       <div className="flex flex-col gap-5 px-4 py-5">
         <div className="flex flex-col gap-2">
-          <span className="text-[12.5px] font-medium text-text-muted">Foto o video</span>
+          <span className="text-[12.5px] font-medium text-text-muted">
+            Foto o video{mode === "mira-esto" ? " (opcional)" : ""}
+          </span>
 
           <input
             ref={fileInputRef}
@@ -158,7 +227,9 @@ export default function CreatePostPage() {
         </div>
 
         <div className="flex flex-col gap-2">
-          <span className="text-[12.5px] font-medium text-text-muted">Descripción</span>
+          <span className="text-[12.5px] font-medium text-text-muted">
+            {mode === "post" ? "Descripción" : "Texto (opcional si hay foto/video)"}
+          </span>
           <textarea
             value={caption}
             onChange={(e) => setCaption(e.target.value)}
@@ -204,22 +275,24 @@ export default function CreatePostPage() {
           )}
         </div>
 
-        <div className="flex flex-col gap-2">
-          <span className="text-[12.5px] font-medium text-text-muted">Quién puede verlo</span>
-          <div className="flex gap-1 rounded-xl bg-surface-2 p-1">
-            {VISIBILITY_OPTIONS.map((v) => (
-              <button
-                key={v.id}
-                onClick={() => setVisibility(v.id)}
-                className={`flex-1 rounded-lg py-2 font-display text-[13px] font-medium ${
-                  visibility === v.id ? "bg-accent-soft text-accent" : "text-text-muted"
-                }`}
-              >
-                {v.label}
-              </button>
-            ))}
+        {mode === "post" && (
+          <div className="flex flex-col gap-2">
+            <span className="text-[12.5px] font-medium text-text-muted">Quién puede verlo</span>
+            <div className="flex gap-1 rounded-xl bg-surface-2 p-1">
+              {VISIBILITY_OPTIONS.map((v) => (
+                <button
+                  key={v.id}
+                  onClick={() => setVisibility(v.id)}
+                  className={`flex-1 rounded-lg py-2 font-display text-[13px] font-medium ${
+                    visibility === v.id ? "bg-accent-soft text-accent" : "text-text-muted"
+                  }`}
+                >
+                  {v.label}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {error && <p className="text-[13px] text-error">{error}</p>}
       </div>

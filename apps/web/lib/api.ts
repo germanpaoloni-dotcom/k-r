@@ -349,6 +349,62 @@ export async function uploadFile(file: File): Promise<ApiEnvelope<UploadResult>>
 }
 
 /* ---------------------------------------------------------------------- */
+/* Mirá esto (capa efímera — desaparece a las 24hs por defecto)             */
+/* ---------------------------------------------------------------------- */
+
+export interface MiraEstoDto {
+  id: string;
+  contentType: "media" | "text" | "mixed";
+  text: string | null;
+  media: { id: string; type: string; url: string; thumbnailUrl: string | null } | null;
+  intentEmoji: string | null;
+  location: { id: string; name: string; city: string } | null;
+  promotedToPostId: string | null;
+  expiresAt: string;
+  createdAt: string;
+  author: { id: string; username: string; displayName: string; avatarUrl: string | null };
+  reactionCount: number;
+  reactedByMe: boolean;
+}
+
+export function getMiraEstoFeed() {
+  return authRequest<MiraEstoDto[]>("/mira-esto");
+}
+
+export function getMiraEstoById(id: string) {
+  return authRequest<MiraEstoDto>(`/mira-esto/${id}`);
+}
+
+export function createMiraEsto(input: {
+  contentType: "media" | "text" | "mixed";
+  text?: string;
+  media?: { type: "image" | "video"; url: string; thumbnailUrl?: string };
+  locationId?: string;
+  intentEmoji?: string;
+  ttlHours?: number;
+}) {
+  return authRequest<MiraEstoDto>("/mira-esto", { method: "POST", body: JSON.stringify(input) });
+}
+
+export function deleteMiraEsto(id: string) {
+  return authRequest<null>(`/mira-esto/${id}`, { method: "DELETE" });
+}
+
+/** El backend devuelve la fila cruda del post insertado (sin hidratar) —
+ * alcanza para redirigir a /p/:id, que hace su propio fetch hidratado. */
+export function promoteMiraEsto(id: string) {
+  return authRequest<{ id: string }>(`/mira-esto/${id}/promote`, { method: "POST" });
+}
+
+export function reactToMiraEsto(id: string) {
+  return authRequest<null>(`/mira-esto/${id}/react`, { method: "POST" });
+}
+
+export function unreactToMiraEsto(id: string) {
+  return authRequest<null>(`/mira-esto/${id}/react`, { method: "DELETE" });
+}
+
+/* ---------------------------------------------------------------------- */
 /* Mensajes (chat 1:1)                                                      */
 /* ---------------------------------------------------------------------- */
 
