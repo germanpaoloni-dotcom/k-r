@@ -23,7 +23,7 @@ export default function LoginPage() {
       return;
     }
     saveSession(res.data.tokens);
-    router.push("/home");
+    router.push(res.data.user.onboardingCompletedAt ? "/home" : "/onboarding");
   }
 
   return (

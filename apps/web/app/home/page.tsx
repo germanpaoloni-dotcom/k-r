@@ -47,7 +47,12 @@ function HomeContent() {
       return;
     }
     me(session.accessToken).then((res) => {
-      if (res.data) setUser(res.data);
+      if (!res.data) return;
+      if (!res.data.onboardingCompletedAt) {
+        router.replace("/onboarding");
+        return;
+      }
+      setUser(res.data);
     });
   }, [router]);
 

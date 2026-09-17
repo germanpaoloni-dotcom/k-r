@@ -75,6 +75,7 @@ export interface UserPublic {
   bio: string | null;
   accountType: AccountType;
   createdAt: string;
+  onboardingCompletedAt: string | null;
 }
 
 export interface UserPrivate extends UserPublic {

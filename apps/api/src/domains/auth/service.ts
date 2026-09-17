@@ -30,6 +30,7 @@ function toPublicUser(user: typeof users.$inferSelect) {
     accountType: user.accountType,
     privacyMode: user.privacyMode,
     createdAt: user.createdAt.toISOString(),
+    onboardingCompletedAt: user.onboardingCompletedAt ? user.onboardingCompletedAt.toISOString() : null,
   };
 }
 

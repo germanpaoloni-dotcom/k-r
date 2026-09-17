@@ -114,6 +114,7 @@ export const users = pgTable(
     privacyMode: privacyModeEnum("privacy_mode").notNull().default("public"),
     locationLat: doublePrecision("location_lat"),
     locationLng: doublePrecision("location_lng"),
+    onboardingCompletedAt: timestamp("onboarding_completed_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },

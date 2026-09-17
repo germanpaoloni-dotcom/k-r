@@ -22,7 +22,7 @@ export default function RegisterPage() {
       return;
     }
     saveSession(res.data.tokens);
-    router.push("/home");
+    router.push("/onboarding");
   }
 
   return (

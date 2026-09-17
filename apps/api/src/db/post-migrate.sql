@@ -36,6 +36,15 @@ CREATE INDEX IF NOT EXISTS decilo_body_trgm_idx ON decilo USING GIN (body gin_tr
 CREATE INDEX IF NOT EXISTS businesses_name_trgm_idx ON businesses USING GIN (name gin_trgm_ops);
 CREATE INDEX IF NOT EXISTS products_name_trgm_idx ON products USING GIN (name gin_trgm_ops);
 
+-- Onboarding — corre una sola vez, no en cada deploy (a diferencia del resto
+-- de este archivo): marca como "ya onboardeadas" a las cuentas creadas antes
+-- de este flujo, para no forzarlas a repetirlo. El corte es una fecha fija
+-- (el momento en que se agregó este flujo), no `now()` — así una corrida
+-- futura de db:migrate no le pisa el progreso a cuentas nuevas que todavía
+-- no pasaron por /onboarding.
+UPDATE users SET onboarding_completed_at = created_at
+WHERE onboarding_completed_at IS NULL AND created_at < '2026-09-17T00:00:00Z';
+
 -- Kör Pets — catálogo curado de 25 mascotas (paquete "Perfil + Pets").
 -- Idempotente por `key`: seguro de correr en cada deploy, nunca pisa filas existentes.
 INSERT INTO pet_definitions (key, name, species, personality, description, interaction, rarity) VALUES

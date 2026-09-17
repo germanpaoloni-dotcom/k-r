@@ -27,6 +27,7 @@ export interface UserPublic {
   bio: string | null;
   accountType: string;
   createdAt: string;
+  onboardingCompletedAt: string | null;
 }
 
 export interface AuthTokens {
@@ -222,6 +223,17 @@ export function followUser(id: string) {
 
 export function unfollowUser(id: string) {
   return authRequest<null>(`/users/${id}/follow`, { method: "DELETE" });
+}
+
+export function getSuggestedUsers() {
+  return authRequest<(FollowUser & { bio: string | null })[]>("/users/suggested");
+}
+
+export function completeOnboarding(input: { lat?: number; lng?: number }) {
+  return authRequest<UserPublic>("/users/me/onboarding", {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
 }
 
 /* ---------------------------------------------------------------------- */
