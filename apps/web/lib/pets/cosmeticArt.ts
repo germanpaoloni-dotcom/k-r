@@ -33,11 +33,13 @@ interface Placement {
   widthPct: number;
   anchorYPct: number;
   anchor: "top" | "center" | "bottom";
+  /** Qué corrección horizontal por mascota aplicar — ver cosmeticAnchors.ts. */
+  offsetKind: "head" | "torso";
 }
 
 /** Calibrado sobre un lienzo de 360px de alto (ver el script de calibración). */
 export const COSMETIC_PLACEMENT: Record<PetCosmeticSlot, Placement> = {
-  hat: { widthPct: 0.46, anchorYPct: 96 / 360, anchor: "bottom" },
-  glasses: { widthPct: 0.56, anchorYPct: 143 / 360, anchor: "center" },
-  outfit: { widthPct: 0.5, anchorYPct: 197 / 360, anchor: "top" },
+  hat: { widthPct: 0.46, anchorYPct: 96 / 360, anchor: "bottom", offsetKind: "head" },
+  glasses: { widthPct: 0.56, anchorYPct: 143 / 360, anchor: "center", offsetKind: "head" },
+  outfit: { widthPct: 0.5, anchorYPct: 197 / 360, anchor: "top", offsetKind: "torso" },
 };

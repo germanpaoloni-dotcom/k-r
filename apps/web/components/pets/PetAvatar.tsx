@@ -2,21 +2,27 @@ import { ILLUSTRATION_BY_SPECIES, type PetMood } from "./illustrations/PetIllust
 import { themeFor } from "../../lib/pets/theme";
 import { hasSprite, spriteUrl } from "../../lib/pets/sprites";
 import { hasCosmeticArt, cosmeticArtUrl, COSMETIC_PLACEMENT } from "../../lib/pets/cosmeticArt";
+import { anchorOffsetFor } from "../../lib/pets/cosmeticAnchors";
 import type { PetDto, PetCosmeticDto } from "../../lib/api";
 
-function CosmeticImage({ item, size }: { item: PetCosmeticDto; size: number }) {
+function CosmeticImage({ item, size, petKey }: { item: PetCosmeticDto; size: number; petKey: string }) {
   const placement = COSMETIC_PLACEMENT[item.slot];
   let transform = "translateX(-50%)";
   if (placement.anchor === "bottom") transform += " translateY(-100%)";
   else if (placement.anchor === "center") transform += " translateY(-50%)";
+  // Corrige el centrado horizontal por mascota — en poses de costado (cuerpo
+  // alargado) el centro de la cabeza/torso no coincide con el centro del
+  // lienzo entero. Ver scripts/calibrate-pet-anchors.mjs.
+  const offsetPct = anchorOffsetFor(petKey, placement.offsetKind);
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
       src={cosmeticArtUrl(item.key)}
       alt=""
       draggable={false}
-      className="absolute left-1/2"
+      className="absolute"
       style={{
+        left: `calc(50% + ${offsetPct * 100}%)`,
         top: placement.anchorYPct * size,
         width: size * placement.widthPct,
         height: "auto",
@@ -45,12 +51,14 @@ export function PetCosmeticsOverlay({
   equipped,
   size,
   useRealArt = false,
+  petKey = "",
 }: {
   equipped?: PetDto["equipped"];
   size: number;
   /** Solo las especies con sprite real (ver lib/pets/sprites.ts) tienen la
    * posición de los accesorios calibrada — el resto sigue con emoji. */
   useRealArt?: boolean;
+  petKey?: string;
 }) {
   if (!equipped) return null;
   const items = [equipped.hat, equipped.glasses, equipped.outfit].filter(
@@ -60,7 +68,7 @@ export function PetCosmeticsOverlay({
     <>
       {items.map((item) =>
         useRealArt && hasCosmeticArt(item.key) ? (
-          <CosmeticImage key={item.slot} item={item} size={size} />
+          <CosmeticImage key={item.slot} item={item} size={size} petKey={petKey} />
         ) : (
           <CosmeticEmoji key={item.slot} item={item} size={size} />
         )
@@ -103,7 +111,7 @@ export function PetAvatar({
       ) : (
         <Illustration color={theme.color} accent={theme.accent} mood={mood ?? theme.mood} size={size} />
       )}
-      <PetCosmeticsOverlay equipped={equipped} size={size} useRealArt={sprited} />
+      <PetCosmeticsOverlay equipped={equipped} size={size} useRealArt={sprited} petKey={petKey} />
       {badge && (
         <span
           className="absolute -bottom-1 -right-1 flex items-center justify-center rounded-full bg-white shadow ring-1 ring-border"

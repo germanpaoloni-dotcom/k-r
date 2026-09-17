@@ -218,7 +218,12 @@ export function PetCompanion() {
                 transform: facing === "left" ? "scaleX(-1)" : undefined,
               }}
             />
-            <PetCosmeticsOverlay equipped={pet.equipped} size={WIDGET_SIZE} useRealArt />
+            <PetCosmeticsOverlay
+              equipped={pet.equipped}
+              size={WIDGET_SIZE}
+              useRealArt
+              petKey={pet.definition.key}
+            />
             {messVisible && (
               <span className="gossip-pet-anim-pop absolute -left-1 -top-1 text-[20px]">{config.emoji}</span>
             )}
