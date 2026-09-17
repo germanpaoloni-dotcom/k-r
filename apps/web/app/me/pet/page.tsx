@@ -10,10 +10,23 @@ import {
   getMyPet,
   getPetDefinitions,
   renamePet,
+  getPetCosmetics,
+  getOwnedPetCosmeticIds,
+  getCreditsBalance,
+  buyPetCosmetic,
+  equipPetCosmetic,
   type PetDto,
   type PetDefinitionDto,
+  type PetCosmeticDto,
+  type PetCosmeticSlot,
 } from "../../../lib/api";
 import { RARITY_LABEL } from "../../../lib/pets/emoji";
+
+const SLOT_TABS: { id: PetCosmeticSlot; label: string }[] = [
+  { id: "hat", label: "Sombreros" },
+  { id: "glasses", label: "Anteojos" },
+  { id: "outfit", label: "Ropa" },
+];
 
 export default function PetPanelPage() {
   const router = useRouter();
@@ -24,6 +37,13 @@ export default function PetPanelPage() {
   const [nameDraft, setNameDraft] = useState("");
   const [saving, setSaving] = useState(false);
 
+  const [cosmetics, setCosmetics] = useState<PetCosmeticDto[]>([]);
+  const [ownedIds, setOwnedIds] = useState<Set<string>>(new Set());
+  const [balance, setBalance] = useState<number | null>(null);
+  const [slotTab, setSlotTab] = useState<PetCosmeticSlot>("hat");
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [cosmeticError, setCosmeticError] = useState<string | null>(null);
+
   useEffect(() => {
     if (!getSession()) {
       router.push("/login");
@@ -31,7 +51,14 @@ export default function PetPanelPage() {
     }
     getMyPet().then((res) => setPet(res.data ?? null));
     getPetDefinitions().then((res) => setDefinitions(res.data ?? []));
+    getPetCosmetics().then((res) => setCosmetics(res.data ?? []));
+    refreshOwnedAndBalance();
   }, [router]);
+
+  function refreshOwnedAndBalance() {
+    getOwnedPetCosmeticIds().then((res) => setOwnedIds(new Set(res.data ?? [])));
+    getCreditsBalance().then((res) => setBalance(res.data?.balance ?? 0));
+  }
 
   async function saveName() {
     const name = nameDraft.trim();
@@ -44,6 +71,35 @@ export default function PetPanelPage() {
     setSaving(false);
     setEditingName(false);
     if (res.data) setPet(res.data);
+  }
+
+  async function onCosmeticTap(item: PetCosmeticDto) {
+    if (!pet || busyId) return;
+    setCosmeticError(null);
+    const isEquipped = pet.equipped?.[item.slot]?.id === item.id;
+    const isOwned = ownedIds.has(item.id);
+
+    setBusyId(item.id);
+    try {
+      if (isEquipped) {
+        const res = await equipPetCosmetic(item.slot, null);
+        if (res.data) setPet(res.data);
+        return;
+      }
+      if (!isOwned) {
+        const buyRes = await buyPetCosmetic(item.id);
+        if (buyRes.error || !buyRes.data) {
+          setCosmeticError(buyRes.error?.message ?? "No pudimos comprar el accesorio.");
+          return;
+        }
+        setOwnedIds((prev) => new Set(prev).add(item.id));
+        setBalance((b) => (b !== null ? b - item.creditsCost : b));
+      }
+      const equipRes = await equipPetCosmetic(item.slot, item.id);
+      if (equipRes.data) setPet(equipRes.data);
+    } finally {
+      setBusyId(null);
+    }
   }
 
   if (pet === undefined) {
@@ -73,7 +129,12 @@ export default function PetPanelPage() {
 
       {pet && !switching && pet.definition && (
         <div className="flex flex-col items-center px-5 py-6 text-center">
-          <PetAvatar species={pet.definition.species} petKey={pet.definition.key} size={140} />
+          <PetAvatar
+            species={pet.definition.species}
+            petKey={pet.definition.key}
+            size={140}
+            equipped={pet.equipped}
+          />
 
           {editingName ? (
             <div className="mt-4 flex items-center gap-2">
@@ -124,6 +185,60 @@ export default function PetPanelPage() {
           >
             Cambiar de mascota
           </button>
+
+          {/* Personalización — sombreros, anteojos, ropa. Arranca con emoji como
+              representación visual; se va a ir reemplazando por arte real de a poco,
+              igual que pasó con las mascotas. */}
+          <div className="mt-9 w-full text-left">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="font-display text-[13px] font-semibold uppercase tracking-[0.06em] text-text-muted">
+                Personalizar
+              </h2>
+              {balance !== null && (
+                <span className="text-[12px] font-medium text-text-muted">💠 {balance} créditos</span>
+              )}
+            </div>
+
+            <div className="mb-3 flex gap-1 rounded-xl bg-surface-2 p-1">
+              {SLOT_TABS.map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => setSlotTab(t.id)}
+                  className={`flex-1 rounded-lg py-2 font-display text-[12.5px] font-medium ${
+                    slotTab === t.id ? "bg-accent-soft text-accent" : "text-text-muted"
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-3 gap-2">
+              {cosmetics
+                .filter((c) => c.slot === slotTab)
+                .map((item) => {
+                  const isEquipped = pet.equipped?.[item.slot]?.id === item.id;
+                  const isOwned = ownedIds.has(item.id);
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => onCosmeticTap(item)}
+                      disabled={busyId === item.id}
+                      className={`flex flex-col items-center gap-1 rounded-md border p-3 text-center disabled:opacity-50 ${
+                        isEquipped ? "border-accent bg-accent-soft" : "border-border bg-surface"
+                      }`}
+                    >
+                      <span className="text-[26px]">{item.emoji}</span>
+                      <span className="text-[11.5px] font-medium leading-tight">{item.name}</span>
+                      <span className="text-[10px] text-text-muted">
+                        {isEquipped ? "Puesto" : isOwned ? "Tocá para poner" : `${item.creditsCost} créditos`}
+                      </span>
+                    </button>
+                  );
+                })}
+            </div>
+            {cosmeticError && <p className="mt-3 text-[12.5px] text-error">{cosmeticError}</p>}
+          </div>
         </div>
       )}
 

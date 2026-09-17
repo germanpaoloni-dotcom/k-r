@@ -28,7 +28,7 @@ function describe(n: NotificationDto): string {
     case "comment":
       return `${who} comentó tu publicación`;
     case "mira_esto_reaction":
-      return `${who} reaccionó a tu Mirá esto`;
+      return `${who} reaccionó a tu Orbe`;
     case "message":
       return `${who} te mandó un mensaje`;
     case "share":

@@ -296,6 +296,18 @@ export interface PetDefinitionDto {
   rarity: string;
 }
 
+export type PetCosmeticSlot = "hat" | "glasses" | "outfit";
+
+export interface PetCosmeticDto {
+  id: string;
+  key: string;
+  name: string;
+  slot: PetCosmeticSlot;
+  emoji: string;
+  rarity: string;
+  creditsCost: number;
+}
+
 export interface PetDto {
   id: string;
   ownerType: string;
@@ -307,6 +319,11 @@ export interface PetDto {
   xp: number;
   createdAt: string;
   definition: PetDefinitionDto | null;
+  equipped?: {
+    hat: PetCosmeticDto | null;
+    glasses: PetCosmeticDto | null;
+    outfit: PetCosmeticDto | null;
+  };
 }
 
 export function getPetDefinitions() {
@@ -331,6 +348,26 @@ export function switchPet(definitionId: string) {
 
 export function renamePet(name: string) {
   return authRequest<PetDto>("/pets/mine", { method: "PATCH", body: JSON.stringify({ name }) });
+}
+
+export function getCreditsBalance() {
+  return authRequest<{ balance: number }>("/credits/balance");
+}
+
+export function getPetCosmetics() {
+  return request<PetCosmeticDto[]>("/pet-cosmetics");
+}
+
+export function getOwnedPetCosmeticIds() {
+  return authRequest<string[]>("/pet-cosmetics/mine");
+}
+
+export function buyPetCosmetic(id: string) {
+  return authRequest<PetCosmeticDto>(`/pet-cosmetics/${id}/buy`, { method: "POST" });
+}
+
+export function equipPetCosmetic(slot: PetCosmeticSlot, cosmeticId: string | null) {
+  return authRequest<PetDto>("/pets/mine/equip", { method: "POST", body: JSON.stringify({ slot, cosmeticId }) });
 }
 
 /* ---------------------------------------------------------------------- */

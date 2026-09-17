@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getMyPet, type PetDto } from "../../lib/api";
-import { PetAvatar } from "./PetAvatar";
+import { PetAvatar, PetCosmeticsOverlay } from "./PetAvatar";
 import { hasSprite, spriteUrl, type SpritePose } from "../../lib/pets/sprites";
 import { interactionFor, type GagFamily } from "../../lib/pets/interactions";
 import type { PetMood } from "./illustrations/PetIllustration";
@@ -204,7 +204,7 @@ export function PetCompanion() {
           <button
             onClick={onTap}
             aria-label={`Tu mascota: ${config.line}`}
-            className={hopping ? "gossip-pet-anim-hop" : !activeFamily ? "gossip-pet-anim-bob" : undefined}
+            className={`relative ${hopping ? "gossip-pet-anim-hop" : !activeFamily ? "gossip-pet-anim-bob" : ""}`}
           >
             <img
               src={spriteUrl(pet.species, pet.definition.key, pose)}
@@ -218,6 +218,7 @@ export function PetCompanion() {
                 transform: facing === "left" ? "scaleX(-1)" : undefined,
               }}
             />
+            <PetCosmeticsOverlay equipped={pet.equipped} size={WIDGET_SIZE} />
             {messVisible && (
               <span className="gossip-pet-anim-pop absolute -left-1 -top-1 text-[20px]">{config.emoji}</span>
             )}
@@ -235,7 +236,7 @@ export function PetCompanion() {
         aria-label={`Tu mascota: ${config.line}`}
         className={`relative flex items-center justify-center rounded-full bg-surface shadow-md ring-1 ring-border ${gagAnimClass ?? "gossip-pet-anim-bob"}`}
       >
-        <PetAvatar species={pet.species} petKey={pet.definition.key} size={68} mood={mood} />
+        <PetAvatar species={pet.species} petKey={pet.definition.key} size={68} mood={mood} equipped={pet.equipped} />
         {messVisible && (
           <span className="gossip-pet-anim-pop absolute -left-2 -top-2 text-[20px]">{config.emoji}</span>
         )}

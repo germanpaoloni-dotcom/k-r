@@ -74,3 +74,18 @@ INSERT INTO pet_definitions (key, name, species, personality, description, inter
   ('kiwi',     'Kiwi',   'bird',   'El emplumador',                'Siempre deja alguna pluma.',                          'fly',              'common'),
   ('trueno',   'Trueno', 'bird',   'El fiestero',                 'Puede convertir cualquier momento en fiesta.',         'party',            'legendary')
 ON CONFLICT (key) DO NOTHING;
+
+-- Panel de mascota — personalización (sombreros, gafas, ropa). Arranca con
+-- emoji como representación visual, mismo criterio que el catálogo de pets
+-- antes de tener sprites reales; se va reemplazando de a poco.
+INSERT INTO pet_cosmetics (key, name, slot, emoji, rarity, credits_cost) VALUES
+  ('gorra',        'Gorra',              'hat',     '🧢', 'common',    40),
+  ('galera',       'Galera',             'hat',     '🎩', 'rare',      90),
+  ('corona',       'Corona',             'hat',     '👑', 'legendary', 320),
+  ('anteojos-sol',  'Anteojos de sol',   'glasses', '🕶️', 'common',    35),
+  ('anteojos-nerd', 'Anteojos',          'glasses', '👓', 'rare',      65),
+  ('antiparras',   'Antiparras',         'glasses', '🥽', 'epic',      150),
+  ('bufanda',      'Bufanda',            'outfit',  '🧣', 'common',    30),
+  ('remera',       'Remera deportiva',   'outfit',  '🎽', 'rare',      70),
+  ('campera',      'Campera',            'outfit',  '🧥', 'epic',      160)
+ON CONFLICT (key) DO NOTHING;

@@ -865,6 +865,22 @@ export const petDefinitions = pgTable("pet_definitions", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const petCosmeticSlotEnum = pgEnum("pet_cosmetic_slot", ["hat", "glasses", "outfit"]);
+
+/** Catálogo de accesorios de mascota (sombreros, gafas, ropa) — arranca con
+ * emoji como representación visual, igual que el catálogo de pets antes de
+ * tener sprites reales; se reemplaza especie por especie sin tocar el modelo. */
+export const petCosmetics = pgTable("pet_cosmetics", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  key: varchar("key", { length: 40 }).notNull().unique(),
+  name: varchar("name", { length: 60 }).notNull(),
+  slot: petCosmeticSlotEnum("slot").notNull(),
+  emoji: varchar("emoji", { length: 8 }).notNull(),
+  rarity: petRarityEnum("rarity").notNull().default("common"),
+  creditsCost: integer("credits_cost").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const pets = pgTable("pets", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   ownerType: varchar("owner_type", { length: 10 }).notNull(), // user | group (grupo, dominio Play sigue siendo Fase 5)
@@ -876,6 +892,9 @@ export const pets = pgTable("pets", {
   definitionId: uuid("definition_id").references(() => petDefinitions.id),
   level: integer("level").notNull().default(1),
   xp: integer("xp").notNull().default(0),
+  equippedHatId: uuid("equipped_hat_id").references(() => petCosmetics.id),
+  equippedGlassesId: uuid("equipped_glasses_id").references(() => petCosmetics.id),
+  equippedOutfitId: uuid("equipped_outfit_id").references(() => petCosmetics.id),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

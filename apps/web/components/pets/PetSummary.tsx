@@ -9,7 +9,7 @@ export function PetSummary({ pet, editable }: { pet: PetDto; editable?: boolean 
 
   const content = (
     <>
-      <PetAvatar species={pet.definition.species} petKey={pet.definition.key} size={52} />
+      <PetAvatar species={pet.definition.species} petKey={pet.definition.key} size={52} equipped={pet.equipped} />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <span className="font-display text-[14px] font-semibold">{pet.name}</span>

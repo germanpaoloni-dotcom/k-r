@@ -9,6 +9,7 @@ import {
   badges,
   pets,
   petDefinitions,
+  petCosmetics,
   inventory,
   groups,
   groupMembers,
@@ -471,9 +472,27 @@ export async function renamePet(userId: string, name: string) {
 }
 
 async function hydratePetDefinition(pet: typeof pets.$inferSelect) {
-  if (!pet.definitionId) return { ...pet, definition: null };
-  const [definition] = await db.select().from(petDefinitions).where(eq(petDefinitions.id, pet.definitionId));
-  return { ...pet, definition: definition ?? null };
+  const definition = pet.definitionId
+    ? (await db.select().from(petDefinitions).where(eq(petDefinitions.id, pet.definitionId)))[0] ?? null
+    : null;
+
+  const cosmeticIds = [pet.equippedHatId, pet.equippedGlassesId, pet.equippedOutfitId].filter(
+    (id): id is string => id !== null
+  );
+  const cosmeticRows = cosmeticIds.length
+    ? await db.select().from(petCosmetics).where(inArray(petCosmetics.id, cosmeticIds))
+    : [];
+  const cosmeticById = new Map(cosmeticRows.map((c) => [c.id, c]));
+
+  return {
+    ...pet,
+    definition,
+    equipped: {
+      hat: pet.equippedHatId ? cosmeticById.get(pet.equippedHatId) ?? null : null,
+      glasses: pet.equippedGlassesId ? cosmeticById.get(pet.equippedGlassesId) ?? null : null,
+      outfit: pet.equippedOutfitId ? cosmeticById.get(pet.equippedOutfitId) ?? null : null,
+    },
+  };
 }
 
 /** Mascota de un usuario, pública — perfil propio (`/pets/mine`) o ajeno (`/users/:id/pet`). */
@@ -483,6 +502,88 @@ export async function getUserPet(userId: string) {
     .from(pets)
     .where(and(eq(pets.ownerType, "user"), eq(pets.ownerId, userId)));
   return pet ? hydratePetDefinition(pet) : null;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Panel de mascota — personalización (sombreros, gafas, ropa)              */
+/* ---------------------------------------------------------------------- */
+
+const SLOT_TO_COLUMN = {
+  hat: "equippedHatId",
+  glasses: "equippedGlassesId",
+  outfit: "equippedOutfitId",
+} as const;
+export type PetCosmeticSlot = keyof typeof SLOT_TO_COLUMN;
+
+export async function listPetCosmetics() {
+  return db.select().from(petCosmetics).orderBy(petCosmetics.slot, petCosmetics.creditsCost);
+}
+
+export async function getOwnedPetCosmeticIds(userId: string): Promise<string[]> {
+  const rows = await db
+    .select({ itemId: inventory.itemId })
+    .from(inventory)
+    .where(and(eq(inventory.userId, userId), eq(inventory.itemType, "pet_cosmetic")));
+  return rows.map((r) => r.itemId);
+}
+
+export async function buyPetCosmetic(userId: string, cosmeticId: string) {
+  const [cosmetic] = await db.select().from(petCosmetics).where(eq(petCosmetics.id, cosmeticId));
+  if (!cosmetic) throw new PlayError(404, "Accesorio no encontrado.");
+
+  const [owned] = await db
+    .select()
+    .from(inventory)
+    .where(
+      and(eq(inventory.userId, userId), eq(inventory.itemType, "pet_cosmetic"), eq(inventory.itemId, cosmeticId))
+    );
+  if (owned) throw new PlayError(400, "Ya tenés este accesorio.");
+
+  const balance = await getBalance(userId);
+  if (balance < cosmetic.creditsCost) throw new PlayError(400, "Créditos insuficientes.");
+
+  await db.transaction(async (tx) => {
+    await tx.insert(gossipCredits).values({
+      userId,
+      delta: -cosmetic.creditsCost,
+      reason: "pet_cosmetic_purchase",
+      refType: "pet_cosmetic",
+      refId: cosmeticId,
+    });
+    await tx.insert(inventory).values({ userId, itemType: "pet_cosmetic", itemId: cosmeticId });
+  });
+
+  return cosmetic;
+}
+
+/** Equipa (o desequipa, con cosmeticId null) un accesorio en el slot dado. */
+export async function equipPetCosmetic(userId: string, slot: PetCosmeticSlot, cosmeticId: string | null) {
+  const [pet] = await db
+    .select()
+    .from(pets)
+    .where(and(eq(pets.ownerType, "user"), eq(pets.ownerId, userId)));
+  if (!pet) throw new PlayError(404, "Todavía no tenés una mascota.");
+
+  if (cosmeticId) {
+    const [cosmetic] = await db.select().from(petCosmetics).where(eq(petCosmetics.id, cosmeticId));
+    if (!cosmetic) throw new PlayError(404, "Accesorio no encontrado.");
+    if (cosmetic.slot !== slot) throw new PlayError(400, "Ese accesorio no va en ese lugar.");
+    const [owned] = await db
+      .select()
+      .from(inventory)
+      .where(
+        and(eq(inventory.userId, userId), eq(inventory.itemType, "pet_cosmetic"), eq(inventory.itemId, cosmeticId))
+      );
+    if (!owned) throw new PlayError(403, "No tenés ese accesorio todavía.");
+  }
+
+  const column = SLOT_TO_COLUMN[slot];
+  const [updated] = await db
+    .update(pets)
+    .set({ [column]: cosmeticId })
+    .where(eq(pets.id, pet.id))
+    .returning();
+  return hydratePetDefinition(updated!);
 }
 
 export async function createGroupPet(groupId: string, userId: string, input: { species: string; name: string }) {

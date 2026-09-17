@@ -28,6 +28,10 @@ import {
   adoptPet,
   switchPet,
   renamePet,
+  listPetCosmetics,
+  getOwnedPetCosmeticIds,
+  buyPetCosmetic,
+  equipPetCosmetic,
 } from "./service.js";
 
 const createGameSchema = z.object({
@@ -65,6 +69,11 @@ const adoptPetSchema = z.object({
 
 const renamePetSchema = z.object({
   name: z.string().min(1).max(40),
+});
+
+const equipPetCosmeticSchema = z.object({
+  slot: z.enum(["hat", "glasses", "outfit"]),
+  cosmeticId: z.string().uuid().nullable(),
 });
 
 function handleError(err: unknown, reply: FastifyReply) {
@@ -230,6 +239,40 @@ export async function playRoutes(app: FastifyInstance) {
   app.get("/pet-definitions", async (_req, reply) => {
     const list = await listPetDefinitions();
     return reply.send({ data: list, error: null });
+  });
+
+  app.get("/pet-cosmetics", async (_req, reply) => {
+    const list = await listPetCosmetics();
+    return reply.send({ data: list, error: null });
+  });
+
+  app.get("/pet-cosmetics/mine", { preHandler: app.authenticate }, async (req, reply) => {
+    const { sub } = req.user as { sub: string };
+    const ids = await getOwnedPetCosmeticIds(sub);
+    return reply.send({ data: ids, error: null });
+  });
+
+  app.post("/pet-cosmetics/:id/buy", { preHandler: app.authenticate }, async (req, reply) => {
+    const { id } = req.params as { id: string };
+    const { sub } = req.user as { sub: string };
+    try {
+      const cosmetic = await buyPetCosmetic(sub, id);
+      return reply.status(201).send({ data: cosmetic, error: null });
+    } catch (err) {
+      return handleError(err, reply);
+    }
+  });
+
+  app.post("/pets/mine/equip", { preHandler: app.authenticate }, async (req, reply) => {
+    const parsed = equipPetCosmeticSchema.safeParse(req.body);
+    if (!parsed.success) return reply.status(400).send({ data: null, error: parsed.error.flatten() });
+    const { sub } = req.user as { sub: string };
+    try {
+      const pet = await equipPetCosmetic(sub, parsed.data.slot, parsed.data.cosmeticId);
+      return reply.send({ data: pet, error: null });
+    } catch (err) {
+      return handleError(err, reply);
+    }
   });
 
   app.post("/pets/adopt", { preHandler: app.authenticate }, async (req, reply) => {

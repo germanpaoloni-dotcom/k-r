@@ -126,7 +126,7 @@ function CreateContent() {
     });
     setLoading(false);
     if (res.error || !res.data) {
-      setError(res.error?.message ?? "No pudimos publicar Mirá esto.");
+      setError(res.error?.message ?? "No pudimos publicar el Orbe.");
       return;
     }
     router.push(`/mira-esto/${res.data.id}`);
@@ -166,7 +166,7 @@ function CreateContent() {
             mode === "mira-esto" ? "bg-accent-soft text-accent" : "text-text-muted"
           }`}
         >
-          Mirá esto
+          Orbe
         </button>
       </div>
       {mode === "mira-esto" && (
