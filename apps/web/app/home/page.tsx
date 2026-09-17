@@ -9,6 +9,7 @@ import { PostCard } from "../../components/PostCard";
 import { BottomNav } from "../../components/BottomNav";
 import { MiraEstoBar } from "../../components/MiraEstoBar";
 import { NotificationBell } from "../../components/NotificationBell";
+import { PetCompanion } from "../../components/pets/PetCompanion";
 import { getSession, getFeed, me, type FeedTab, type PostDto, type UserPublic } from "../../lib/api";
 
 const SUB_TABS: { id: FeedTab; label: string }[] = [
@@ -173,6 +174,7 @@ function HomeContent() {
           ))}
       </div>
 
+      <PetCompanion />
       <BottomNav />
     </main>
   );
